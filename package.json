@@ -1,0 +1,15 @@
+{
+  "name": "json-api-store",
+  "version": "0.0.1",
+  "description": "",
+  "main": "lib/store.js",
+  "scripts": {
+    "test": "jasmine"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "babel": "^5.8.21",
+    "jasmine": "^2.3.2"
+  }
+}
