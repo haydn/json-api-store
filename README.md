@@ -1,5 +1,7 @@
 # JSON API Store
 
+## Example Usage
+
 ```javascript
 
 Store.type["categories"] = {
@@ -50,4 +52,18 @@ category.title; // "Books"
 product.category === category; // true
 category.products[0] === product; // true
 
+```
+
+## Tests
+
+You can run tests once-off with NPM:
+
+```
+npm test
+```
+
+Alternatively, you can run tests in watch mode using [nodemon](http://nodemon.io):
+
+```
+nodemon node_modules/jasmine/bin/jasmine.js
 ```

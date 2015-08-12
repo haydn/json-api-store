@@ -1,0 +1,15 @@
+{
+  "env": {
+    "browser": true
+  },
+  "ecmaFeatures": {
+    "arrowFunctions": true,
+    "classes": true,
+    "modules": true,
+    "templateStrings": true
+  },
+  "rules": {
+    "semi": 2,
+    "vars-on-top": 2
+  }
+}

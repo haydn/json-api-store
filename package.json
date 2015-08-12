@@ -4,7 +4,7 @@
   "description": "",
   "main": "lib/store.js",
   "scripts": {
-    "test": "jasmine"
+    "test": "node_modules/jasmine/bin/jasmine.js"
   },
   "author": "",
   "license": "MIT",
