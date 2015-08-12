@@ -9,6 +9,13 @@ describe("hasOne", function() {
     store = new Store();
   });
 
+  it("must return the correct type attribute", function () {
+    expect(Store.hasOne().type).toBe("has-one");
+    expect(Store.hasOne("example").type).toBe("has-one");
+    expect(Store.hasOne({}).type).toBe("has-one");
+    expect(Store.hasOne("example", {}).type).toBe("has-one");
+  });
+
   it("must return a deserialize function that maps to the relation described in the data property", function () {
     Store.types["categories"] = {};
     Store.types["products"] = {};
@@ -76,6 +83,11 @@ describe("hasOne", function() {
     };
     expect(Store.hasOne("category").deserialize.call(store, data)).toBeUndefined();
     expect(Store.hasOne().deserialize.call(store, data, "category")).toBeUndefined();
+  });
+
+  it("must return a deserialize function that passes on an inverse option", function () {
+    expect(Store.hasOne({ inverse: "foo" }).inverse).toBe("foo");
+    expect(Store.hasOne("example", { inverse: "foo" }).inverse).toBe("foo");
   });
 
 });

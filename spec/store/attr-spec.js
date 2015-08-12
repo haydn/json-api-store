@@ -9,6 +9,15 @@ describe("attr", function() {
     store = new Store();
   });
 
+  it("must return the correct type attribute", function () {
+    expect(Store.attr().type).toBe("attr");
+  });
+
+  it("must return a deserialize function that passes on a default option", function () {
+    expect(Store.attr({ default: "foo" }).default).toBe("foo");
+    expect(Store.attr("example", { default: "foo" }).default).toBe("foo");
+  });
+
   it("must return a deserialize function that maps to the attribute provided", function () {
     var field = Store.attr("example-title");
     var data = {

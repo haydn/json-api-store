@@ -9,6 +9,17 @@ describe("hasMany", function() {
     store = new Store();
   });
 
+  it("must return the correct type attribute", function () {
+    expect(Store.hasMany().type).toBe("has-many");
+    expect(Store.hasMany("example").type).toBe("has-many");
+    expect(Store.hasMany({}).type).toBe("has-many");
+    expect(Store.hasMany("example", {}).type).toBe("has-many");
+  });
+
+  it("must return default value as an empty array", function () {
+    expect(Store.hasMany().default).toEqual([]);
+  });
+
   it("must return a deserialize function that maps to the relation described in the data property", function () {
     Store.types["categories"] = {};
     Store.types["products"] = {};
@@ -98,6 +109,11 @@ describe("hasMany", function() {
     };
     expect(Store.hasMany("categories").deserialize.call(store, data)).toBeUndefined();
     expect(Store.hasMany().deserialize.call(store, data, "categories")).toBeUndefined();
+  });
+
+  it("must return a deserialize function that passes on an inverse option", function () {
+    expect(Store.hasMany({ inverse: "foo" }).inverse).toBe("foo");
+    expect(Store.hasMany("example", { inverse: "foo" }).inverse).toBe("foo");
   });
 
 });

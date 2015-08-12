@@ -117,12 +117,139 @@ describe("add", function() {
     };
     store.add({
       "type": "products",
-      "id": "44",
-      "attributes": {
-        "example": true
-      }
+      "id": "44"
     });
     expect(store.find("products", "44").example).toBe(store);
+  });
+
+  it("must set inverse one-to-one relationships", function () {
+    Store.types["categories"] = {
+      product: Store.hasOne({ inverse: "category" })
+    };
+    Store.types["products"] = {
+      category: Store.hasOne({ inverse: "product" })
+    };
+    store.add({
+      "type": "products",
+      "id": "44",
+      "relationships": {
+        "category": {
+          "data": {
+            "type": "categories",
+            "id": "34"
+          }
+        }
+      }
+    });
+    expect(store.find("categories", "34").product).toBe(store.find("products", "44"));
+  });
+
+  it("must set inverse one-to-many relationships", function () {
+    Store.types["categories"] = {
+      products: Store.hasMany({ inverse: "category" })
+    };
+    Store.types["products"] = {
+      category: Store.hasOne({ inverse: "products" })
+    };
+    store.add({
+      "type": "products",
+      "id": "44",
+      "relationships": {
+        "category": {
+          "data": {
+            "type": "categories",
+            "id": "34"
+          }
+        }
+      }
+    });
+    expect(store.find("categories", "34").products).toContain(store.find("products", "44"));
+  });
+
+  it("must not set inverse one-to-many relationships if it already exists", function () {
+    Store.types["categories"] = {
+      products: Store.hasMany({ inverse: "category" })
+    };
+    Store.types["products"] = {
+      category: Store.hasOne({ inverse: "products" })
+    };
+    store.add({
+      "type": "products",
+      "id": "44",
+      "relationships": {
+        "category": {
+          "data": {
+            "type": "categories",
+            "id": "34"
+          }
+        }
+      }
+    });
+    store.add({
+      "type": "products",
+      "id": "44",
+      "relationships": {
+        "category": {
+          "data": {
+            "type": "categories",
+            "id": "34"
+          }
+        }
+      }
+    });
+    expect(store.find("categories", "34").products.length).toBe(1);
+  });
+
+  it("must throw an error a has one relationship's type hasn't been defined", function () {
+    expect(function () {
+      store.add({
+        "type": "products",
+        "id": "44"
+      });
+    }).toThrowError("Unknown type 'products'");
+  });
+
+  it("must throw an error when the inverse of a has one relationship is an attribute", function () {
+    Store.types["categories"] = {
+      product: Store.attr()
+    };
+    Store.types["products"] = {
+      category: Store.hasOne({ inverse: "product" })
+    };
+    expect(function () {
+      store.add({
+        "type": "products",
+        "id": "44",
+        "relationships": {
+          "category": {
+            "data": {
+              "type": "categories",
+              "id": "34"
+            }
+          }
+        }
+      });
+    }).toThrowError("The the inverse relationship for 'category' is an attribute ('product')");
+  });
+
+  it("must not set the inverse of a has one relationship when there isn't an inverse", function () {
+    Store.types["categories"] = {};
+    Store.types["products"] = {
+      category: Store.hasOne({ inverse: "product" })
+    };
+    store.add({
+      "type": "products",
+      "id": "44",
+      "relationships": {
+        "category": {
+          "data": {
+            "type": "categories",
+            "id": "34"
+          }
+        }
+      }
+    });
+    expect(store.find("categories", "34").product).toBeUndefined();
   });
 
 });

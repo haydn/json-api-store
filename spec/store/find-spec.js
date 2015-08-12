@@ -41,4 +41,13 @@ describe("find", function() {
     }).toThrowError(TypeError, "You must provide a type");
   });
 
+  it("must give fields their default values", function () {
+    Store.types["products"] = {
+      title: {
+        default: "example"
+      }
+    };
+    expect(store.find("products", "1").title).toBe("example");
+  });
+
 });
