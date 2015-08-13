@@ -9,10 +9,11 @@ describe("find", function() {
     store = new Store();
   });
 
-  it("must return an object with type and id fields when an id is provided", function () {
+  it("must, when an id is provided, return an object with 'type', 'id' and '_dependents' properties", function () {
     Store.types["products"] = {};
     expect(store.find("products", "23").type).toBe("products");
     expect(store.find("products", "74").id).toBe("74");
+    expect(store.find("products", "23")._dependents).toEqual([]);
   });
 
   it("must return the same object if called with the same arguments", function () {
@@ -22,8 +23,8 @@ describe("find", function() {
 
   it("must return an array of objects when no id is provided", function () {
     Store.types["products"] = {};
-    var a = store.find("products", "1");
-    expect(store.find("products")).toContain(a);
+    store.find("products", "1");
+    expect(store.find("products")).toContain(store.find("products", "1"));
   });
 
   it("must throw an error when trying to find an unknown resource type", function () {

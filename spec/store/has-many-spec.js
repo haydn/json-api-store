@@ -116,4 +116,23 @@ describe("hasMany", function() {
     expect(Store.hasMany("example", { inverse: "foo" }).inverse).toBe("foo");
   });
 
+  it("must throw an error a relationship's type hasn't been defined", function () {
+    Store.types["products"] = {};
+    var field = Store.hasMany();
+    var data = {
+      "type": "products",
+      "id": "44",
+      "relationships": {
+        "categories": {
+          "data": [
+            { "type": "categories", "id": "34" }
+          ]
+        }
+      }
+    };
+    expect(function () {
+      field.deserialize.call(store, data, "categories");
+    }).toThrowError("Unknown type 'categories'");
+  });
+
 });

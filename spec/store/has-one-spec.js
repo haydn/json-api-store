@@ -90,4 +90,21 @@ describe("hasOne", function() {
     expect(Store.hasOne("example", { inverse: "foo" }).inverse).toBe("foo");
   });
 
+  it("must throw an error a relationship's type hasn't been defined", function () {
+    Store.types["products"] = {};
+    var field = Store.hasOne();
+    var data = {
+      "type": "products",
+      "id": "44",
+      "relationships": {
+        "category": {
+          "data": { "type": "categories", "id": "34" }
+        }
+      }
+    };
+    expect(function () {
+      field.deserialize.call(store, data, "category");
+    }).toThrowError("Unknown type 'categories'");
+  });
+
 });
