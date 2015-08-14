@@ -1,4 +1,4 @@
-var Store = require("../../src/store");
+var Store = require("../../../src/store");
 
 describe("hasOne", function() {
 
@@ -52,6 +52,20 @@ describe("hasOne", function() {
       }
     };
     expect(field.deserialize.call(store, data, "category")).toBe(store.find("categories", "2"));
+  });
+
+  it("must return a deserialize function that returns null when the relationship data field is null", function () {
+    var data = {
+      "type": "products",
+      "id": "1",
+      "relationships": {
+        "category": {
+          "data": null
+        }
+      }
+    };
+    expect(Store.hasOne("category").deserialize.call(store, data)).toBeNull();
+    expect(Store.hasOne().deserialize.call(store, data, "category")).toBeNull();
   });
 
   it("must return a deserialize function that returns undefined when the relationship data field is missing", function () {

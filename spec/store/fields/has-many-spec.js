@@ -1,4 +1,4 @@
-var Store = require("../../src/store");
+var Store = require("../../../src/store");
 
 describe("hasMany", function() {
 
@@ -78,6 +78,25 @@ describe("hasMany", function() {
     });
     expect(ids).toContain("2");
     expect(ids).toContain("4");
+  });
+
+  it("must return a deserialize function that returns an empty array when the relationship data field is null or an empty array", function () {
+    var data = {
+      "type": "products",
+      "id": "1",
+      "relationships": {
+        "categories": {
+          "data": []
+        },
+        "comments": {
+          "data": null
+        }
+      }
+    };
+    expect(Store.hasMany("categories").deserialize.call(store, data)).toEqual([]);
+    expect(Store.hasMany().deserialize.call(store, data, "categories")).toEqual([]);
+    expect(Store.hasMany("comments").deserialize.call(store, data)).toEqual([]);
+    expect(Store.hasMany().deserialize.call(store, data, "comments")).toEqual([]);
   });
 
   it("must return a deserialize function that returns undefined when the relationship data field is missing", function () {

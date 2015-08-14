@@ -1,4 +1,4 @@
-var Store = require("../../src/store");
+var Store = require("../../../src/store");
 
 describe("destroy", function() {
 

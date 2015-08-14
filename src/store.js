@@ -45,28 +45,12 @@ export default class Store {
   }
 
   add(data) {
-    var object, definition;
     if (data) {
       if (data.type && data.id) {
-        object = this.find(data.type, data.id);
-        definition = Store.types[data.type];
-        Object.keys(definition).forEach(name => {
-          var field = definition[name];
-          var result = field.deserialize.call(this, data, name);
-          if (result) {
-            if (field.type === "has-one") {
-              result._dependents.push({ type: data.type, id: data.id, fieldName: name });
-              this._addInverseRelationship(object, name, result, field);
-            } else if (field.type === "has-many") {
-              result.forEach(r => {
-                r._dependents.push({ type: data.type, id: data.id, fieldName: name });
-                this._addInverseRelationship(object, name, r, field);
-              });
-            }
-          }
-          if (typeof result !== 'undefined') {
-            object[name] = result;
-          }
+        let resource = this.find(data.type, data.id);
+        let definition = Store.types[data.type];
+        Object.keys(definition).forEach(fieldName => {
+          this._addField(data, resource, definition, fieldName);
         });
       } else {
         throw new TypeError(`The data must have a type and id`);
@@ -82,25 +66,10 @@ export default class Store {
         if (id) {
           let resource = this._data[type][id];
           if (resource) {
-            resource._dependents.forEach(r => {
-              let relation = this._data[r.type][r.id];
-              if (Store.types[r.type][r.fieldName].type === "has-one") {
-                relation[r.fieldName] = null;
-              } else {
-                let index = relation[r.fieldName].indexOf(resource);
-                relation[r.fieldName].splice(index, 1);
-              }
-              // TODO: This only need to be run once for each relation.
-              relation._dependents = relation._dependents.filter(r => {
-                return !(r.type === type && r.id === id);
-              });
-            });
-            delete this._data[type][id];
+            this._remove(resource);
           }
         } else {
-          Object.keys(this._data[type]).forEach(id => {
-            this.remove(type, id);
-          });
+          Object.keys(this._data[type]).forEach(id => this.remove(type, id));
         }
       } else {
         throw new TypeError(`Unknown type '${type}'`);
@@ -110,22 +79,105 @@ export default class Store {
     }
   }
 
-  _addInverseRelationship(object, key, result, field) {
-    var definition = Store.types[result.type];
-    var name = field.inverse || result.type;
-    var field = definition && definition[name];
-    if (field) {
+  _addField(data, resource, definition, fieldName) {
+    var field = definition[fieldName];
+    var newValue = field.deserialize.call(this, data, fieldName);
+    if (typeof newValue !== "undefined") {
       if (field.type === "has-one") {
-        object._dependents.push({ type: result.type, id: result.id, fieldName: name });
-        result[name] = object;
-      } else if (field.type === "has-many") {
-        object._dependents.push({ type: result.type, id: result.id, fieldName: name });
-        if (result[name].indexOf(object) === -1) {
-          result[name].push(object);
+        if (resource[fieldName]) {
+          this._removeInverseRelationship(resource, fieldName, resource[fieldName], field);
         }
-      } else if (field.type === "attr") {
-        throw new Error(`The the inverse relationship for '${key}' is an attribute ('${name}')`);
+        if (newValue) {
+          this._addInverseRelationship(resource, fieldName, newValue, field);
+        }
+      } else if (field.type === "has-many") {
+        resource[fieldName].forEach(r => {
+          if (resource[fieldName].indexOf(r) !== -1) {
+            this._removeInverseRelationship(resource, fieldName, r, field);
+          }
+        });
+        newValue.forEach(r => {
+          this._addInverseRelationship(resource, fieldName, r, field);
+        });
       }
+      resource[fieldName] = newValue;
+    }
+  }
+
+  _addInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {
+    var targetDefinition = Store.types[targetResource.type];
+    var targetFieldName = sourceField.inverse || targetResource.type;
+    var targetField = targetDefinition && targetDefinition[targetFieldName];
+    targetResource._dependents.push({ type: sourceResource.type, id: sourceResource.id, fieldName: sourceFieldName });
+    if (targetField) {
+      if (targetField.type === "has-one") {
+        sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });
+        targetResource[targetFieldName] = sourceResource;
+      } else if (targetField.type === "has-many") {
+        sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });
+        if (targetResource[targetFieldName].indexOf(sourceResource) === -1) {
+          targetResource[targetFieldName].push(sourceResource);
+        }
+      } else if (targetField.type === "attr") {
+        throw new Error(`The the inverse relationship for '${sourceFieldName}' is an attribute ('${targetFieldName}')`);
+      }
+    } else if (sourceField.inverse) {
+      throw new Error(`The the inverse relationship for '${sourceFieldName}' is missing ('${sourceField.inverse}')`);
+    }
+  }
+
+  _remove(resource) {
+    resource._dependents.forEach(dependent => {
+      let dependentResource = this._data[dependent.type][dependent.id];
+      switch (Store.types[dependent.type][dependent.fieldName].type) {
+        case "has-one": {
+          dependentResource[dependent.fieldName] = null;
+          break;
+        }
+        case "has-many": {
+          let index = dependentResource[dependent.fieldName].indexOf(resource);
+          if (index !== -1) {
+            dependentResource[dependent.fieldName].splice(index, 1);
+          }
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+      // TODO: This only needs to be run once for each dependent.
+      dependentResource._dependents = dependentResource._dependents.filter(d => {
+        return !(d.type === resource.type && d.id === resource.id);
+      });
+    });
+    delete this._data[resource.type][resource.id];
+  }
+
+  _removeInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {
+    var targetDefinition = Store.types[targetResource.type];
+    var targetFieldName = sourceField.inverse || targetResource.type;
+    var targetField = targetDefinition && targetDefinition[targetFieldName];
+    targetResource._dependents = targetResource._dependents.filter(r => {
+      return !(r.type === sourceResource.type && r.id === sourceResource.id && r.fieldName === sourceFieldName);
+    });
+    if (targetField) {
+      if (targetField.type === "has-one") {
+        sourceResource._dependents = sourceResource._dependents.filter(r => {
+          return !(r.type === targetResource.type && r.id === targetResource.id && r.fieldName === targetFieldName);
+        });
+        targetResource[targetFieldName] = null;
+      } else if (targetField.type === "has-many") {
+        sourceResource._dependents = sourceResource._dependents.filter(r => {
+          return !(r.type === targetResource.type && r.id === targetResource.id && r.fieldName === targetFieldName);
+        });
+        targetResource[targetFieldName] = targetResource[targetFieldName].filter(r => {
+          return r !== sourceResource;
+        });
+      } else if (targetField.type === "attr") {
+        throw new Error(`The the inverse relationship for '${sourceFieldName}' is an attribute ('${targetFieldName}')`);
+      }
+    } else if (sourceField.inverse) {
+      throw new Error(`The the inverse relationship for '${sourceFieldName}' is missing ('${sourceField.inverse}')`);
     }
   }
 
@@ -156,8 +208,12 @@ Store.hasOne = function(name, options) {
       inverse: options && options.inverse,
       deserialize: function (data, key) {
         name = name || key;
-        if (data.relationships && data.relationships[name] && data.relationships[name].data) {
-          return this.find(data.relationships[name].data.type, data.relationships[name].data.id);
+        if (data.relationships && data.relationships[name]) {
+          if (data.relationships[name].data === null) {
+            return null;
+          } else if (data.relationships[name].data) {
+            return this.find(data.relationships[name].data.type, data.relationships[name].data.id);
+          }
         }
       }
     };
@@ -174,10 +230,14 @@ Store.hasMany = function(name, options) {
       inverse: options && options.inverse,
       deserialize: function (data, key) {
         name = name || key;
-        if (data.relationships && data.relationships[name] && data.relationships[name].data) {
-          return data.relationships[name].data.map((c) => {
-            return this.find(c.type, c.id);
-          });
+        if (data.relationships && data.relationships[name]) {
+          if (data.relationships[name].data === null) {
+            return [];
+          } else if (data.relationships[name].data) {
+            return data.relationships[name].data.map((c) => {
+              return this.find(c.type, c.id);
+            });
+          }
         }
       }
     };

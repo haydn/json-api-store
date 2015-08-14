@@ -1,6 +1,6 @@
-var Store = require("../../src/store");
+var Store = require("../../../src/store");
 
-describe("create", function() {
+describe("read", function() {
 
   var store;
 

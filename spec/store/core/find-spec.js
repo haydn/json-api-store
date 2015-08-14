@@ -1,4 +1,4 @@
-var Store = require("../../src/store");
+var Store = require("../../../src/store");
 
 describe("find", function() {
 
@@ -9,11 +9,10 @@ describe("find", function() {
     store = new Store();
   });
 
-  it("must, when an id is provided, return an object with 'type', 'id' and '_dependents' properties", function () {
+  it("must, when an id is provided, return an object with 'type' and 'id' properties", function () {
     Store.types["products"] = {};
     expect(store.find("products", "23").type).toBe("products");
     expect(store.find("products", "74").id).toBe("74");
-    expect(store.find("products", "23")._dependents).toEqual([]);
   });
 
   it("must return the same object if called with the same arguments", function () {

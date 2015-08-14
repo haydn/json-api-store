@@ -1,4 +1,4 @@
-var Store = require("../../src/store");
+var Store = require("../../../src/store");
 
 describe("remove", function() {
 
@@ -72,8 +72,6 @@ describe("remove", function() {
     expect(store.find("categories", "1").products).toHaveIds([ "10", "11" ]);
     store.remove("products", "10");
     expect(store.find("categories", "1").products).toHaveIds([ "11" ]);
-    expect(store.find("categories", "1")._dependents.length).toBe(1);
-    expect(store.find("categories", "1")._dependents[0]).toEqual({ type: "products", id: "11", fieldName: "category" });
     store.remove("categories", "1");
     expect(store.find("products", "11").category).toBe(null);
   });
