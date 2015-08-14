@@ -88,6 +88,8 @@ esdoc -c esdoc.json
 
 ## Roadmap
 
+- online documentation / website
+- automated release process
 - create, read, update & destroy AJAX methods
 - event listeners for listening to changes
 - type definitions using classes (aka, models)
