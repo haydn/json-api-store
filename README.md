@@ -78,9 +78,16 @@ Alternatively, you can run tests in watch mode using [nodemon](http://nodemon.io
 nodemon node_modules/jasmine/bin/jasmine.js
 ```
 
+## Documentation
+
+Documentation can be generated with [esdoc](https://esdoc.org/):
+
+```
+esdoc -c esdoc.json
+```
+
 ## Roadmap
 
-- documentation
 - create, read, update & destroy AJAX methods
 - event listeners for listening to changes
 - type definitions using classes (aka, models)

@@ -1,9 +1,127 @@
 export default class Store {
 
+  /**
+   * Creates a field definition for an attribute.
+   *
+   * @param {string} [name] - Name of the property to map this field from.
+   * @param {Object} [options] - An options object.
+   * @param {string} [options.default] - Default value for this field.
+   * @return {Object} - Field definition.
+   */
+  static attr(name, options) {
+    if (name && typeof name === 'object') {
+      return Store.attr(null, name);
+    } else {
+      return {
+        type: "attr",
+        default: options && options.default,
+        deserialize: function (data, key) {
+          return data.attributes && data.attributes[name || key];
+        }
+      };
+    }
+  }
+
+  /**
+   * Creates a field definition for an has-one relationship.
+   *
+   * @param {string} [name] - Name of the property to map this field from.
+   * @param {Object} [options] - An options object.
+   * @param {string} [options.inverse] - Name of the inverse relationship.
+   * @return {Object} - Field definition.
+   */
+  static hasOne(name, options) {
+    if (name && typeof name === 'object') {
+      return Store.hasOne(null, name);
+    } else {
+      return {
+        type: "has-one",
+        inverse: options && options.inverse,
+        deserialize: function (data, key) {
+          name = name || key;
+          if (data.relationships && data.relationships[name]) {
+            if (data.relationships[name].data === null) {
+              return null;
+            } else if (data.relationships[name].data) {
+              return this.find(data.relationships[name].data.type, data.relationships[name].data.id);
+            }
+          }
+        }
+      };
+    }
+  }
+
+  /**
+   * Creates a field definition for an has-many relationship.
+   *
+   * @param {string} [name] - Name of the property to map this field from.
+   * @param {Object} [options] - An options object.
+   * @param {string} [options.inverse] - Name of the inverse relationship.
+   * @return {Object} - Field definition.
+   */
+  static hasMany(name, options) {
+    if (name && typeof name === 'object') {
+      return Store.hasMany(null, name);
+    } else {
+      return {
+        type: "has-many",
+        default: [],
+        inverse: options && options.inverse,
+        deserialize: function (data, key) {
+          name = name || key;
+          if (data.relationships && data.relationships[name]) {
+            if (data.relationships[name].data === null) {
+              return [];
+            } else if (data.relationships[name].data) {
+              return data.relationships[name].data.map((c) => {
+                return this.find(c.type, c.id);
+              });
+            }
+          }
+        }
+      };
+    }
+  }
+
   constructor() {
     this._data = {};
   }
 
+  /**
+   * Add an individual resource to the store. This is used internally by the
+   * `push()` method.
+   *
+   * @param {Object} object - Resource Object to add. See:
+                            http://jsonapi.org/format/#document-resource-objects
+   * @return {undefined} - Doesn't return anything.
+   */
+  add(object) {
+    if (object) {
+      if (object.type && object.id) {
+        let resource = this.find(object.type, object.id);
+        let definition = Store.types[object.type];
+        Object.keys(definition).forEach(fieldName => {
+          this._addField(object, resource, definition, fieldName);
+        });
+      } else {
+        throw new TypeError(`The data must have a type and id`);
+      }
+    } else {
+      throw new TypeError(`You must provide data to add`);
+    }
+  }
+
+  /**
+   * Find a resource or entire collection of resources.
+   *
+   * NOTE: If the resource hasn't been loaded via an add() or push() call it
+   * will be automatically created when find is called.
+   *
+   * @param {!string} type - Type of the resource(s) to find.
+   * @param {string} [id] - The id of the resource to find. If omitted all
+   *                        resources of the type will be returned.
+   * @return {Object|Object[]} - Either the resource or an array of resources.
+   */
   find(type, id) {
     var definition;
     if (type) {
@@ -33,6 +151,14 @@ export default class Store {
     }
   }
 
+  /**
+   * Add a JSON API response to the store. This method can be used to handle a
+   * successful GET or POST response from the server.
+   *
+   * @param {Object} root - Top Level Object to push. See:
+                            http://jsonapi.org/format/#document-top-level
+   * @return {undefined} - Doesn't return anything.
+   */
   push(root) {
     if (root.data.constructor === Array) {
       root.data.forEach(x => this.add(x));
@@ -44,22 +170,14 @@ export default class Store {
     }
   }
 
-  add(data) {
-    if (data) {
-      if (data.type && data.id) {
-        let resource = this.find(data.type, data.id);
-        let definition = Store.types[data.type];
-        Object.keys(definition).forEach(fieldName => {
-          this._addField(data, resource, definition, fieldName);
-        });
-      } else {
-        throw new TypeError(`The data must have a type and id`);
-      }
-    } else {
-      throw new TypeError(`You must provide data to add`);
-    }
-  }
-
+  /**
+   * Remove a resource or collection of resources from the store.
+   *
+   * @param {!string} type - Type of the resource(s) to remove.
+   * @param {string} [id] - The id of the resource to remove. If omitted all
+   *                        resources of the type will be removed.
+   * @return {undefined} - Doesn't return anything.
+   */
   remove(type, id) {
     if (type) {
       if (Store.types[type]) {
@@ -79,9 +197,9 @@ export default class Store {
     }
   }
 
-  _addField(data, resource, definition, fieldName) {
+  _addField(object, resource, definition, fieldName) {
     var field = definition[fieldName];
-    var newValue = field.deserialize.call(this, data, fieldName);
+    var newValue = field.deserialize.call(this, object, fieldName);
     if (typeof newValue !== "undefined") {
       if (field.type === "has-one") {
         if (resource[fieldName]) {
@@ -184,62 +302,3 @@ export default class Store {
 }
 
 Store.types = {};
-
-Store.attr = function(name, options) {
-  if (name && typeof name === 'object') {
-    return Store.attr(null, name);
-  } else {
-    return {
-      type: "attr",
-      default: options && options.default,
-      deserialize: function (data, key) {
-        return data.attributes && data.attributes[name || key];
-      }
-    };
-  }
-};
-
-Store.hasOne = function(name, options) {
-  if (name && typeof name === 'object') {
-    return Store.hasOne(null, name);
-  } else {
-    return {
-      type: "has-one",
-      inverse: options && options.inverse,
-      deserialize: function (data, key) {
-        name = name || key;
-        if (data.relationships && data.relationships[name]) {
-          if (data.relationships[name].data === null) {
-            return null;
-          } else if (data.relationships[name].data) {
-            return this.find(data.relationships[name].data.type, data.relationships[name].data.id);
-          }
-        }
-      }
-    };
-  }
-};
-
-Store.hasMany = function(name, options) {
-  if (name && typeof name === 'object') {
-    return Store.hasMany(null, name);
-  } else {
-    return {
-      type: "has-many",
-      default: [],
-      inverse: options && options.inverse,
-      deserialize: function (data, key) {
-        name = name || key;
-        if (data.relationships && data.relationships[name]) {
-          if (data.relationships[name].data === null) {
-            return [];
-          } else if (data.relationships[name].data) {
-            return data.relationships[name].data.map((c) => {
-              return this.find(c.type, c.id);
-            });
-          }
-        }
-      }
-    };
-  }
-};
