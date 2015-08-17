@@ -90,6 +90,7 @@ esdoc -c esdoc.json
 
 - examples
 - online documentation / website
+- NPM/Bower packages
 - automated release process
 - create, read, update & destroy AJAX methods
 - event listeners for listening to changes
