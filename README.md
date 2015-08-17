@@ -88,6 +88,7 @@ esdoc -c esdoc.json
 
 ## Roadmap
 
+- examples
 - online documentation / website
 - automated release process
 - create, read, update & destroy AJAX methods
