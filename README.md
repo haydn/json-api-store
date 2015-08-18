@@ -64,6 +64,15 @@ category.products[0] === product; // true
 
 ```
 
+## Documentation
+
+Documentation is available in the `docs` directory. It can be re-generated with
+[esdoc](https://esdoc.org/):
+
+```
+esdoc -c esdoc.json
+```
+
 ## Tests
 
 You can run tests once-off with NPM:
@@ -78,12 +87,9 @@ Alternatively, you can run tests in watch mode using [nodemon](http://nodemon.io
 nodemon node_modules/jasmine/bin/jasmine.js
 ```
 
-## Documentation
 
-Documentation can be generated with [esdoc](https://esdoc.org/):
 
 ```
-esdoc -c esdoc.json
 ```
 
 ## Roadmap
