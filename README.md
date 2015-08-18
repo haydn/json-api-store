@@ -1,4 +1,4 @@
-# JSON API Store ![](https://travis-ci.org/haydn/json-api-store.svg?branch=master)
+# JSON API Store [![Build Status](https://travis-ci.org/haydn/json-api-store.svg?branch=master)](https://travis-ci.org/haydn/json-api-store)
 
 JSON API Store (JAS) is browser store that implements the [JSON API](http://jsonapi.org) specification (version 1.0).
 
