@@ -1,12 +1,15 @@
 # JSON API Store [![Build Status](https://travis-ci.org/haydn/json-api-store.svg?branch=master)](https://travis-ci.org/haydn/json-api-store)
 
-JSON API Store is browser store that implements the
-[JSON API](http://jsonapi.org) specification (version 1.0).
+JSON API Store takes [JSON API](http://jsonapi.org) data and creates plain
+JavaScript objects for the resources it describes. It will link-up
+relationships automatically and update both sides of reciprocal relationships
+when either side is modified.
 
 ## Usage
 
-At the moment you need to do your own AJAX requests, but JSON API Store will
-store your data and maintain the relationships.
+At the moment you need to do your own AJAX requests, but there are plans to add
+AJAX methods to create, read, update and destroy resources in the future. For
+now you can just push the responses from your own requests to the store:
 
 ```javascript
 
@@ -105,12 +108,13 @@ babel src/store.js -m umd --module-id Store --compact true --no-comments -o lib/
 
 ## Roadmap
 
+- better type definitions (define per instance and optionally use classes)
+- support for pluralisations/pseudonyms
 - online documentation / website
 - NPM/Bower packages
 - automated release process
 - create, read, update & destroy AJAX methods
 - event listeners for listening to changes
-- support for pluralisations/pseudonyms
-- type definitions using classes (aka, models)
-- maybe a way to query the local data
+- a way to query the local data?
+- isomorphic?
 - support for links & pagination
