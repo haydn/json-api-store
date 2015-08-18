@@ -20,8 +20,8 @@
     </div>
     <div id="controls">
       <hr>
-      <button data-action="create" data-file="create-comment.json">Create Comment</button>
-      <button data-action="update" data-file="update-comment.json">Update Comment</button>
+      <button data-action="create" data-file="data/create-comment.json">Create Comment</button>
+      <button data-action="update" data-file="data/update-comment.json">Update Comment</button>
       <button data-action="destroy" data-type="categories" data-id="2">Delete Category</button>
     </div>
     <script type="text/javascript" charset="utf-8" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
@@ -60,7 +60,7 @@
 
       }
 
-      $.getJSON("product.json", function (response) {
+      $.getJSON("data/product.json", function (response) {
         store.push(response);
         render();
       });
