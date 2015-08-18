@@ -71,7 +71,7 @@ category.products[0] === product; // true
 
 ## Installing
 
-Grab the `lib/store.js` file (Bower / NPM options coming soon).
+Grab the `dist/store.js` file (Bower / NPM options coming soon).
 
 ## Documentation
 
@@ -103,7 +103,7 @@ You can rebuild the the output from the source using
 [babel](https://babeljs.io):
 
 ```
-babel src/store.js -m umd --module-id Store --compact true --no-comments -o lib/store.js
+babel src/store.js -m umd --module-id Store --compact true --no-comments -o dist/store.js
 ```
 
 ## Roadmap

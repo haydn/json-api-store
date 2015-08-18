@@ -2,7 +2,7 @@
   "name": "json-api-store",
   "version": "0.1.0",
   "description": "A lightweight library for using JSON API in the browser.",
-  "main": "lib/store.js",
+  "main": "dist/store.js",
   "scripts": {
     "test": "node_modules/jasmine/bin/jasmine.js"
   },
