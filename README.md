@@ -9,13 +9,13 @@ At the moment you need to do your own AJAX requests, but JAS will store you data
 ```javascript
 
 // Define the "categories" type.
-Store.type["categories"] = {
+Store.types["categories"] = {
   title: Store.attr(),
   products: Store.hasMany({ inverse: "category" })
 };
 
 // Define the "products" type.
-Store.type["products"] = {
+Store.types["products"] = {
   title: Store.attr(),
   category: Store.hasOne()
 };
