@@ -1,10 +1,12 @@
 # JSON API Store [![Build Status](https://travis-ci.org/haydn/json-api-store.svg?branch=master)](https://travis-ci.org/haydn/json-api-store)
 
-JSON API Store (JAS) is browser store that implements the [JSON API](http://jsonapi.org) specification (version 1.0).
+JSON API Store is browser store that implements the
+[JSON API](http://jsonapi.org) specification (version 1.0).
 
-## Example Usage
+## Usage
 
-At the moment you need to do your own AJAX requests, but JAS will store you data and maintain the relationships.
+At the moment you need to do your own AJAX requests, but JSON API Store will
+store your data and maintain the relationships.
 
 ```javascript
 
@@ -64,6 +66,10 @@ category.products[0] === product; // true
 
 ```
 
+## Installing
+
+Grab the `lib/store.js` file (Bower / NPM options coming soon).
+
 ## Documentation
 
 Documentation is available in the `docs` directory. It can be re-generated with
@@ -81,7 +87,8 @@ You can run tests once-off with NPM:
 npm test
 ```
 
-Alternatively, you can run tests in watch mode using [nodemon](http://nodemon.io):
+Alternatively, you can run tests in watch mode using
+[nodemon](http://nodemon.io):
 
 ```
 nodemon node_modules/jasmine/bin/jasmine.js
@@ -98,13 +105,12 @@ babel src/store.js -m umd --module-id Store --compact true --no-comments -o lib/
 
 ## Roadmap
 
-- examples
 - online documentation / website
 - NPM/Bower packages
 - automated release process
 - create, read, update & destroy AJAX methods
 - event listeners for listening to changes
+- support for pluralisations/pseudonyms
 - type definitions using classes (aka, models)
-- simple support for pluralisations/pseudonyms
 - maybe a way to query the local data
 - support for links & pagination
