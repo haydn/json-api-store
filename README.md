@@ -87,9 +87,13 @@ Alternatively, you can run tests in watch mode using [nodemon](http://nodemon.io
 nodemon node_modules/jasmine/bin/jasmine.js
 ```
 
+## Building
 
+You can rebuild the the output from the source using
+[babel](https://babeljs.io):
 
 ```
+babel src/store.js -m umd --module-id Store --compact true --no-comments -o lib/store.js
 ```
 
 ## Roadmap
