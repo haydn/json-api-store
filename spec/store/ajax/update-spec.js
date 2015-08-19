@@ -5,7 +5,6 @@ describe("update", function() {
   var store;
 
   beforeEach(function() {
-    Store.types = {};
     store = new Store();
   });
 

@@ -5,7 +5,6 @@ describe("hasMany", function() {
   var store;
 
   beforeEach(function() {
-    Store.types = {};
     store = new Store();
   });
 
@@ -21,8 +20,8 @@ describe("hasMany", function() {
   });
 
   it("must return a deserialize function that maps to the relation described in the data property", function () {
-    Store.types["categories"] = {};
-    Store.types["products"] = {};
+    store.define("categories", {});
+    store.define("products", {});
     var field = Store.hasMany("categories");
     var data = {
       "type": "products",
@@ -51,8 +50,8 @@ describe("hasMany", function() {
   });
 
   it("must return a deserialize function that uses the key param when the name isn't provided", function () {
-    Store.types["categories"] = {};
-    Store.types["products"] = {};
+    store.define("categories", {});
+    store.define("products", {});
     var field = Store.hasMany();
     var data = {
       "type": "products",
@@ -136,7 +135,7 @@ describe("hasMany", function() {
   });
 
   it("must throw an error a relationship's type hasn't been defined", function () {
-    Store.types["products"] = {};
+    store.define("products", {});
     var field = Store.hasMany();
     var data = {
       "type": "products",

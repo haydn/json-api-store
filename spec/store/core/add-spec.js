@@ -5,12 +5,11 @@ describe("add", function() {
   var store;
 
   beforeEach(function() {
-    Store.types = {};
     store = new Store();
   });
 
   it("must add a resource to the store", function () {
-    Store.types["products"] = {};
+    store.define("products", {});
     store.add({
       "type": "products",
       "id": "44"
@@ -41,13 +40,13 @@ describe("add", function() {
   });
 
   it("must use deserialize functions provided by type definitions", function () {
-    Store.types["products"] = {
+    store.define("products", {
       title: {
         deserialize: function (data, key) {
           return "Example " + data.id + " " + key;
         }
       }
-    };
+    });
     store.add({
       "type": "products",
       "id": "44"
@@ -56,7 +55,7 @@ describe("add", function() {
   });
 
   it("must not set fields when the deserialize function returns undefined", function () {
-    Store.types["products"] = {
+    store.define("products", {
       title: {
         deserialize: function (data) {
           if (data.attributes && data.attributes.title) {
@@ -64,7 +63,7 @@ describe("add", function() {
           }
         }
       }
-    };
+    });
     store.add({
       "type": "products",
       "id": "44",
@@ -81,7 +80,7 @@ describe("add", function() {
   });
 
   it("must set fields when the deserialize function returns null", function () {
-    Store.types["products"] = {
+    store.define("products", {
       title: {
         deserialize: function (data) {
           if (data.attributes && data.attributes.title) {
@@ -91,7 +90,7 @@ describe("add", function() {
           }
         }
       }
-    };
+    });
     store.add({
       "type": "products",
       "id": "44",
@@ -108,13 +107,13 @@ describe("add", function() {
   });
 
   it("must call deserialize functions in the context of the store", function () {
-    Store.types["products"] = {
+    store.define("products", {
       example: {
         deserialize: function () {
           return this;
         }
       }
-    };
+    });
     store.add({
       "type": "products",
       "id": "44"
@@ -125,12 +124,12 @@ describe("add", function() {
   describe("inverse relationships", function () {
 
     it("must setup inverse one-to-one relationships", function () {
-      Store.types["categories"] = {
+      store.define("categories", {
         product: Store.hasOne({ inverse: "category" })
-      };
-      Store.types["products"] = {
+      });
+      store.define("products", {
         category: Store.hasOne({ inverse: "product" })
-      };
+      });
       store.add({
         "type": "products",
         "id": "10",
@@ -144,12 +143,12 @@ describe("add", function() {
     });
 
     it("must setup inverse one-to-many relationships", function () {
-      Store.types["categories"] = {
+      store.define("categories", {
         products: Store.hasMany({ inverse: "category" })
-      };
-      Store.types["products"] = {
+      });
+      store.define("products", {
         category: Store.hasOne({ inverse: "products" })
-      };
+      });
       store.add({
         "type": "products",
         "id": "10",
@@ -172,12 +171,12 @@ describe("add", function() {
     });
 
     it("must setup inverse many-to-many relationships", function () {
-      Store.types["categories"] = {
+      store.define("categories", {
         products: Store.hasMany({ inverse: "categories" })
-      };
-      Store.types["products"] = {
+      });
+      store.define("products", {
         categories: Store.hasMany({ inverse: "products" })
-      };
+      });
       store.add({
         "type": "categories",
         "id": "10",
@@ -204,12 +203,12 @@ describe("add", function() {
     });
 
     it("must setup inverse many-to-one relationships", function () {
-      Store.types["categories"] = {
+      store.define("categories", {
         products: Store.hasMany({ inverse: "category" })
-      };
-      Store.types["products"] = {
+      });
+      store.define("products", {
         category: Store.hasOne({ inverse: "products" })
-      };
+      });
       store.add({
         "type": "categories",
         "id": "10",
@@ -236,16 +235,16 @@ describe("add", function() {
     });
 
     it("must throw an error when an inverse relationship is an attribute", function () {
-      Store.types["categories"] = {
+      store.define("categories", {
         product: Store.attr()
-      };
-      Store.types["comments"] = {
+      });
+      store.define("comments", {
         product: Store.attr()
-      };
-      Store.types["products"] = {
+      });
+      store.define("products", {
         category: Store.hasOne({ inverse: "product" }),
         comments: Store.hasMany({ inverse: "product" }),
-      };
+      });
       expect(function () {
         store.add({
           "type": "products",
@@ -273,14 +272,14 @@ describe("add", function() {
     });
 
     it("must throw an error when an explict inverse relationship is absent", function () {
-      Store.types["categories"] = {};
-      Store.types["comments"] = {};
-      Store.types["products"] = {
+      store.define("categories", {});
+      store.define("comments", {});
+      store.define("products", {
         category: Store.hasOne({ inverse: "product" }),
         comments: Store.hasMany({ inverse: "products" }),
         users:    Store.hasMany()
-      };
-      Store.types["users"] = {};
+      });
+      store.define("users", {});
       expect(function () {
         store.add({
           "type": "products",
@@ -321,12 +320,12 @@ describe("add", function() {
     });
 
     it("must not try to process inverse relationships for absent relationships", function () {
-      Store.types["categories"] = {
+      store.define("categories", {
         products: Store.hasMany({ inverse: "category" })
-      };
-      Store.types["products"] = {
+      });
+      store.define("products", {
         category: Store.hasOne({ inverse: "products" })
-      };
+      });
       expect(function () {
         store.add({
           "type": "products",
@@ -336,12 +335,12 @@ describe("add", function() {
     });
 
     it("must remove null (has one) inverse relationships", function () {
-      Store.types["categories"] = {
+      store.define("categories", {
         products: Store.hasMany({ inverse: "category" })
-      };
-      Store.types["products"] = {
+      });
+      store.define("products", {
         category: Store.hasOne({ inverse: "products" })
-      };
+      });
       store.add({
         "type": "products",
         "id": "44",
@@ -365,12 +364,12 @@ describe("add", function() {
     });
 
     it("must remove empty (has many) inverse relationships", function () {
-      Store.types["categories"] = {
+      store.define("categories", {
         products: Store.hasMany({ inverse: "category" })
-      };
-      Store.types["products"] = {
+      });
+      store.define("products", {
         category: Store.hasOne({ inverse: "products" })
-      };
+      });
       store.add({
         "type": "categories",
         "id": "37",

@@ -5,23 +5,22 @@ describe("find", function() {
   var store;
 
   beforeEach(function() {
-    Store.types = {};
     store = new Store();
   });
 
   it("must, when an id is provided, return an object with 'type' and 'id' properties", function () {
-    Store.types["products"] = {};
+    store.define("products", {});
     expect(store.find("products", "23").type).toBe("products");
     expect(store.find("products", "74").id).toBe("74");
   });
 
   it("must return the same object if called with the same arguments", function () {
-    Store.types["products"] = {};
+    store.define("products", {});
     expect(store.find("products", "23")).toBe(store.find("products", "23"));
   });
 
   it("must return an array of objects when no id is provided", function () {
-    Store.types["products"] = {};
+    store.define("products", {});
     store.find("products", "1");
     expect(store.find("products")).toContain(store.find("products", "1"));
   });
@@ -42,11 +41,11 @@ describe("find", function() {
   });
 
   it("must give fields their default values", function () {
-    Store.types["products"] = {
+    store.define("products", {
       title: {
         default: "example"
       }
-    };
+    });
     expect(store.find("products", "1").title).toBe("example");
   });
 

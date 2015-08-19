@@ -26,12 +26,16 @@
     </div>
     <script type="text/javascript" charset="utf-8" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
     <script type="text/javascript" charset="utf-8" src="../dist/store.js"></script>
-    <script type="text/javascript" charset="utf-8" src="types/categories.js"></script>
-    <script type="text/javascript" charset="utf-8" src="types/comments.js"></script>
-    <script type="text/javascript" charset="utf-8" src="types/products.js"></script>
+    <script type="text/javascript" charset="utf-8" src="types/category.js"></script>
+    <script type="text/javascript" charset="utf-8" src="types/comment.js"></script>
+    <script type="text/javascript" charset="utf-8" src="types/product.js"></script>
     <script type="text/javascript">
 
       var store = new Store();
+
+      store.define("categories", Category);
+      store.define("comments", Comment);
+      store.define("products", Product);
 
       function render() {
 

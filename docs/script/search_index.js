@@ -348,6 +348,12 @@ window.esdocSearchIndex = [
     "method"
   ],
   [
+    "src/store.js~store#define",
+    "class/src/store.js~Store.html#instance-method-define",
+    "src/store.js~Store#define",
+    "method"
+  ],
+  [
     "src/store.js~store#find",
     "class/src/store.js~Store.html#instance-method-find",
     "src/store.js~Store#find",

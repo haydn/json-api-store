@@ -5,12 +5,11 @@ describe("push", function() {
   var store;
 
   beforeEach(function() {
-    Store.types = {};
     store = new Store();
   });
 
   it("must add a single resource to the store", function () {
-    Store.types["products"] = {};
+    store.define("products", {});
     spyOn(store, 'add');
     var root = {
       "data": {
@@ -23,7 +22,7 @@ describe("push", function() {
   });
 
   it("must add a collection of resources to the store", function () {
-    Store.types["products"] = {};
+    store.define("products", {});
     spyOn(store, 'add');
     var root = {
       "data": [
@@ -43,8 +42,8 @@ describe("push", function() {
   });
 
   it("must add included resources to the store", function () {
-    Store.types["categories"] = {};
-    Store.types["products"] = {};
+    store.define("categories", {});
+    store.define("products", {});
     spyOn(store, 'add');
     var root = {
       "data": {

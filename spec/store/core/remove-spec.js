@@ -5,12 +5,11 @@ describe("remove", function() {
   var store;
 
   beforeEach(function() {
-    Store.types = {};
     store = new Store();
   });
 
   it("must remove a resource from the store", function () {
-    Store.types["products"] = {};
+    store.define("products", {});
     store.add({
       "type": "products",
       "id": "44"
@@ -21,7 +20,7 @@ describe("remove", function() {
   });
 
   it("must remove call remove for each resources of a type if no id is given", function () {
-    Store.types["products"] = {};
+    store.define("products", {});
     store.add({
       "type": "products",
       "id": "44"
@@ -51,12 +50,12 @@ describe("remove", function() {
   });
 
   it("must remove dependant relationships when a resource is removed", function () {
-    Store.types["categories"] = {
+    store.define("categories", {
       products: Store.hasMany({ inverse: "category" })
-    };
-    Store.types["products"] = {
+    });
+    store.define("products", {
       category: Store.hasOne({ inverse: "products" })
-    };
+    });
     store.add({
       "type": "categories",
       "id": "1",

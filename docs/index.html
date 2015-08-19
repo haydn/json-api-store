@@ -46,25 +46,30 @@
 
 </nav>
 
-<div class="content" data-ice="content"><div data-ice="index"><h1 id="json-api-store">JSON API Store</h1>
-<p>JSON API Store (JAS) is browser store that implements the <a href="http://jsonapi.org">JSON API</a> specification (version 1.0).</p>
-<h2 id="example-usage">Example Usage</h2>
-<p>At the moment you need to do your own AJAX requests, but JAS will store you data and maintain the relationships.</p>
+<div class="content" data-ice="content"><div data-ice="index"><h1 id="json-api-store-build-status-https-travis-ci-org-haydn-json-api-store-svg-branch-master-https-travis-ci-org-haydn-json-api-store-">JSON API Store <a href="https://travis-ci.org/haydn/json-api-store"><img src="https://travis-ci.org/haydn/json-api-store.svg?branch=master" alt="Build Status"></a></h1>
+<p>JSON API Store takes <a href="http://jsonapi.org">JSON API</a> data and creates plain
+JavaScript objects for the resources it describes. It will link-up
+relationships automatically and update both sides of reciprocal relationships
+when either side is modified.</p>
+<h2 id="usage">Usage</h2>
+<p>At the moment you need to do your own AJAX requests, but there are plans to add
+AJAX methods to create, read, update and destroy resources in the future. For
+now you can just push the responses from your own requests to the store:</p>
 <pre><code class="lang-javascript"><pre class="source-code"><code class="prettyprint">
-// Define the &quot;categories&quot; type.
-Store.type[&quot;categories&quot;] = {
-  title: Store.attr(),
-  products: Store.hasMany({ inverse: &quot;category&quot; })
-};
-
-// Define the &quot;products&quot; type.
-Store.type[&quot;products&quot;] = {
-  title: Store.attr(),
-  category: Store.hasOne()
-};
-
 // Create a new store instance.
 var store = new Store();
+
+// Define the &quot;categories&quot; type.
+store.define(&quot;categories&quot;, {
+  title: Store.attr(),
+  products: Store.hasMany({ inverse: &quot;category&quot; })
+});
+
+// Define the &quot;products&quot; type.
+store.define(&quot;products&quot;, {
+  title: Store.attr(),
+  category: Store.hasOne()
+});
 
 // Add data - this can just be the response from a GET request to your API.
 store.push({
@@ -105,19 +110,33 @@ category.title; // &quot;Books&quot;
 product.category === category; // true
 category.products[0] === product; // true</code></pre>
 </code></pre>
-<h2 id="tests">Tests</h2>
+<h2 id="installing">Installing</h2>
+<p>Grab the <code>dist/store.js</code> file (Bower / NPM options coming soon).</p>
+<h2 id="documentation">Documentation</h2>
+<p>Documentation is available in the <code>docs</code> directory. It can be re-generated with
+<a href="https://esdoc.org/">esdoc</a>:</p>
+<pre><code><pre class="source-code"><code class="prettyprint">esdoc -c esdoc.json</code></pre>
+</code></pre><h2 id="tests">Tests</h2>
 <p>You can run tests once-off with NPM:</p>
 <pre><code><pre class="source-code"><code class="prettyprint">npm test</code></pre>
-</code></pre><p>Alternatively, you can run tests in watch mode using <a href="http://nodemon.io">nodemon</a>:</p>
+</code></pre><p>Alternatively, you can run tests in watch mode using
+<a href="http://nodemon.io">nodemon</a>:</p>
 <pre><code><pre class="source-code"><code class="prettyprint">nodemon node_modules/jasmine/bin/jasmine.js</code></pre>
+</code></pre><h2 id="building">Building</h2>
+<p>You can rebuild the the output from the source using
+<a href="https://babeljs.io">babel</a>:</p>
+<pre><code><pre class="source-code"><code class="prettyprint">babel src/store.js -m umd --module-id Store --compact true --no-comments -o dist/store.js</code></pre>
 </code></pre><h2 id="roadmap">Roadmap</h2>
 <ul>
-<li>documentation</li>
+<li>better type definitions (define per instance and optionally use classes)</li>
+<li>support for pluralisations/pseudonyms</li>
+<li>online documentation / website</li>
+<li>NPM/Bower packages</li>
+<li>automated release process</li>
 <li>create, read, update &amp; destroy AJAX methods</li>
 <li>event listeners for listening to changes</li>
-<li>type definitions using classes (aka, models)</li>
-<li>simple support for pluralisations/pseudonyms</li>
-<li>maybe a way to query the local data</li>
+<li>a way to query the local data?</li>
+<li>isomorphic?</li>
 <li>support for links &amp; pagination</li>
 </ul>
 </div>

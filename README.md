@@ -13,20 +13,20 @@ now you can just push the responses from your own requests to the store:
 
 ```javascript
 
-// Define the "categories" type.
-Store.types["categories"] = {
-  title: Store.attr(),
-  products: Store.hasMany({ inverse: "category" })
-};
-
-// Define the "products" type.
-Store.types["products"] = {
-  title: Store.attr(),
-  category: Store.hasOne()
-};
-
 // Create a new store instance.
 var store = new Store();
+
+// Define the "categories" type.
+store.define("categories", {
+  title: Store.attr(),
+  products: Store.hasMany({ inverse: "category" })
+});
+
+// Define the "products" type.
+store.define("products", {
+  title: Store.attr(),
+  category: Store.hasOne()
+});
 
 // Add data - this can just be the response from a GET request to your API.
 store.push({

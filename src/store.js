@@ -85,6 +85,7 @@ export default class Store {
 
   constructor() {
     this._data = {};
+    this._types = {};
   }
 
   /**
@@ -93,13 +94,13 @@ export default class Store {
    *
    * @param {Object} object - Resource Object to add. See:
                             http://jsonapi.org/format/#document-resource-objects
-   * @return {undefined} - Doesn't return anything.
+   * @return {undefined} - Nothing.
    */
   add(object) {
     if (object) {
       if (object.type && object.id) {
         let resource = this.find(object.type, object.id);
-        let definition = Store.types[object.type];
+        let definition = this._types[object.type];
         Object.keys(definition).forEach(fieldName => {
           this._addField(object, resource, definition, fieldName);
         });
@@ -109,6 +110,17 @@ export default class Store {
     } else {
       throw new TypeError(`You must provide data to add`);
     }
+  }
+
+  /**
+   * Defines a type of resource.
+   *
+   * @param {string} name - Name of the resource.
+   * @param {Object} defition - The resource's definition.
+   * @return {undefined} - Nothing.
+   */
+  define(name, defition) {
+    this._types[name] = defition;
   }
 
   /**
@@ -125,7 +137,7 @@ export default class Store {
   find(type, id) {
     var definition;
     if (type) {
-      definition = Store.types[type];
+      definition = this._types[type];
       if (definition) {
         this._data[type] = this._data[type] || {};
         if (id) {
@@ -157,7 +169,7 @@ export default class Store {
    *
    * @param {Object} root - Top Level Object to push. See:
                             http://jsonapi.org/format/#document-top-level
-   * @return {undefined} - Doesn't return anything.
+   * @return {undefined} - Nothing.
    */
   push(root) {
     if (root.data.constructor === Array) {
@@ -176,11 +188,11 @@ export default class Store {
    * @param {!string} type - Type of the resource(s) to remove.
    * @param {string} [id] - The id of the resource to remove. If omitted all
    *                        resources of the type will be removed.
-   * @return {undefined} - Doesn't return anything.
+   * @return {undefined} - Nothing.
    */
   remove(type, id) {
     if (type) {
-      if (Store.types[type]) {
+      if (this._types[type]) {
         if (id) {
           let resource = this._data[type][id];
           if (resource) {
@@ -223,7 +235,7 @@ export default class Store {
   }
 
   _addInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {
-    var targetDefinition = Store.types[targetResource.type];
+    var targetDefinition = this._types[targetResource.type];
     var targetFieldName = sourceField.inverse || targetResource.type;
     var targetField = targetDefinition && targetDefinition[targetFieldName];
     targetResource._dependents.push({ type: sourceResource.type, id: sourceResource.id, fieldName: sourceFieldName });
@@ -247,7 +259,7 @@ export default class Store {
   _remove(resource) {
     resource._dependents.forEach(dependent => {
       let dependentResource = this._data[dependent.type][dependent.id];
-      switch (Store.types[dependent.type][dependent.fieldName].type) {
+      switch (this._types[dependent.type][dependent.fieldName].type) {
         case "has-one": {
           dependentResource[dependent.fieldName] = null;
           break;
@@ -272,7 +284,7 @@ export default class Store {
   }
 
   _removeInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {
-    var targetDefinition = Store.types[targetResource.type];
+    var targetDefinition = this._types[targetResource.type];
     var targetFieldName = sourceField.inverse || targetResource.type;
     var targetField = targetDefinition && targetDefinition[targetFieldName];
     targetResource._dependents = targetResource._dependents.filter(r => {
@@ -300,5 +312,3 @@ export default class Store {
   }
 
 }
-
-Store.types = {};

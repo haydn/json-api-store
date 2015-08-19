@@ -1,4 +1,4 @@
-Store.types["products"] = {
+var Product = {
   title: Store.attr(),
   description: Store.attr(),
   categories: Store.hasMany(),

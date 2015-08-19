@@ -9,7 +9,7 @@
     "access": null,
     "description": null,
     "lineNumber": 1,
-    "content": "export default class Store {\n\n  /**\n   * Creates a field definition for an attribute.\n   *\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.default] - Default value for this field.\n   * @return {Object} - Field definition.\n   */\n  static attr(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.attr(null, name);\n    } else {\n      return {\n        type: \"attr\",\n        default: options && options.default,\n        deserialize: function (data, key) {\n          return data.attributes && data.attributes[name || key];\n        }\n      };\n    }\n  }\n\n  /**\n   * Creates a field definition for an has-one relationship.\n   *\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.inverse] - Name of the inverse relationship.\n   * @return {Object} - Field definition.\n   */\n  static hasOne(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.hasOne(null, name);\n    } else {\n      return {\n        type: \"has-one\",\n        inverse: options && options.inverse,\n        deserialize: function (data, key) {\n          name = name || key;\n          if (data.relationships && data.relationships[name]) {\n            if (data.relationships[name].data === null) {\n              return null;\n            } else if (data.relationships[name].data) {\n              return this.find(data.relationships[name].data.type, data.relationships[name].data.id);\n            }\n          }\n        }\n      };\n    }\n  }\n\n  /**\n   * Creates a field definition for an has-many relationship.\n   *\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.inverse] - Name of the inverse relationship.\n   * @return {Object} - Field definition.\n   */\n  static hasMany(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.hasMany(null, name);\n    } else {\n      return {\n        type: \"has-many\",\n        default: [],\n        inverse: options && options.inverse,\n        deserialize: function (data, key) {\n          name = name || key;\n          if (data.relationships && data.relationships[name]) {\n            if (data.relationships[name].data === null) {\n              return [];\n            } else if (data.relationships[name].data) {\n              return data.relationships[name].data.map((c) => {\n                return this.find(c.type, c.id);\n              });\n            }\n          }\n        }\n      };\n    }\n  }\n\n  constructor() {\n    this._data = {};\n  }\n\n  /**\n   * Add an individual resource to the store. This is used internally by the\n   * `push()` method.\n   *\n   * @param {Object} object - Resource Object to add. See:\n                            http://jsonapi.org/format/#document-resource-objects\n   * @return {undefined} - Doesn't return anything.\n   */\n  add(object) {\n    if (object) {\n      if (object.type && object.id) {\n        let resource = this.find(object.type, object.id);\n        let definition = Store.types[object.type];\n        Object.keys(definition).forEach(fieldName => {\n          this._addField(object, resource, definition, fieldName);\n        });\n      } else {\n        throw new TypeError(`The data must have a type and id`);\n      }\n    } else {\n      throw new TypeError(`You must provide data to add`);\n    }\n  }\n\n  /**\n   * Find a resource or entire collection of resources.\n   *\n   * NOTE: If the resource hasn't been loaded via an add() or push() call it\n   * will be automatically created when find is called.\n   *\n   * @param {!string} type - Type of the resource(s) to find.\n   * @param {string} [id] - The id of the resource to find. If omitted all\n   *                        resources of the type will be returned.\n   * @return {Object|Object[]} - Either the resource or an array of resources.\n   */\n  find(type, id) {\n    var definition;\n    if (type) {\n      definition = Store.types[type];\n      if (definition) {\n        this._data[type] = this._data[type] || {};\n        if (id) {\n          if (!this._data[type][id]) {\n            this._data[type][id] = {\n              _dependents: [],\n              type: type,\n              id: id\n            };\n            Object.keys(definition).forEach(key => {\n              this._data[type][id][key] = definition[key].default;\n            });\n          }\n          return this._data[type][id];\n        } else {\n          return Object.keys(this._data[type]).map(x => this._data[type][x]);\n        }\n      } else {\n        throw new TypeError(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new TypeError(`You must provide a type`);\n    }\n  }\n\n  /**\n   * Add a JSON API response to the store. This method can be used to handle a\n   * successful GET or POST response from the server.\n   *\n   * @param {Object} root - Top Level Object to push. See:\n                            http://jsonapi.org/format/#document-top-level\n   * @return {undefined} - Doesn't return anything.\n   */\n  push(root) {\n    if (root.data.constructor === Array) {\n      root.data.forEach(x => this.add(x));\n    } else {\n      this.add(root.data);\n    }\n    if (root.included) {\n      root.included.forEach(x => this.add(x));\n    }\n  }\n\n  /**\n   * Remove a resource or collection of resources from the store.\n   *\n   * @param {!string} type - Type of the resource(s) to remove.\n   * @param {string} [id] - The id of the resource to remove. If omitted all\n   *                        resources of the type will be removed.\n   * @return {undefined} - Doesn't return anything.\n   */\n  remove(type, id) {\n    if (type) {\n      if (Store.types[type]) {\n        if (id) {\n          let resource = this._data[type][id];\n          if (resource) {\n            this._remove(resource);\n          }\n        } else {\n          Object.keys(this._data[type]).forEach(id => this.remove(type, id));\n        }\n      } else {\n        throw new TypeError(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new TypeError(`You must provide a type to remove`);\n    }\n  }\n\n  _addField(object, resource, definition, fieldName) {\n    var field = definition[fieldName];\n    var newValue = field.deserialize.call(this, object, fieldName);\n    if (typeof newValue !== \"undefined\") {\n      if (field.type === \"has-one\") {\n        if (resource[fieldName]) {\n          this._removeInverseRelationship(resource, fieldName, resource[fieldName], field);\n        }\n        if (newValue) {\n          this._addInverseRelationship(resource, fieldName, newValue, field);\n        }\n      } else if (field.type === \"has-many\") {\n        resource[fieldName].forEach(r => {\n          if (resource[fieldName].indexOf(r) !== -1) {\n            this._removeInverseRelationship(resource, fieldName, r, field);\n          }\n        });\n        newValue.forEach(r => {\n          this._addInverseRelationship(resource, fieldName, r, field);\n        });\n      }\n      resource[fieldName] = newValue;\n    }\n  }\n\n  _addInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {\n    var targetDefinition = Store.types[targetResource.type];\n    var targetFieldName = sourceField.inverse || targetResource.type;\n    var targetField = targetDefinition && targetDefinition[targetFieldName];\n    targetResource._dependents.push({ type: sourceResource.type, id: sourceResource.id, fieldName: sourceFieldName });\n    if (targetField) {\n      if (targetField.type === \"has-one\") {\n        sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });\n        targetResource[targetFieldName] = sourceResource;\n      } else if (targetField.type === \"has-many\") {\n        sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });\n        if (targetResource[targetFieldName].indexOf(sourceResource) === -1) {\n          targetResource[targetFieldName].push(sourceResource);\n        }\n      } else if (targetField.type === \"attr\") {\n        throw new Error(`The the inverse relationship for '${sourceFieldName}' is an attribute ('${targetFieldName}')`);\n      }\n    } else if (sourceField.inverse) {\n      throw new Error(`The the inverse relationship for '${sourceFieldName}' is missing ('${sourceField.inverse}')`);\n    }\n  }\n\n  _remove(resource) {\n    resource._dependents.forEach(dependent => {\n      let dependentResource = this._data[dependent.type][dependent.id];\n      switch (Store.types[dependent.type][dependent.fieldName].type) {\n        case \"has-one\": {\n          dependentResource[dependent.fieldName] = null;\n          break;\n        }\n        case \"has-many\": {\n          let index = dependentResource[dependent.fieldName].indexOf(resource);\n          if (index !== -1) {\n            dependentResource[dependent.fieldName].splice(index, 1);\n          }\n          break;\n        }\n        default: {\n          break;\n        }\n      }\n      // TODO: This only needs to be run once for each dependent.\n      dependentResource._dependents = dependentResource._dependents.filter(d => {\n        return !(d.type === resource.type && d.id === resource.id);\n      });\n    });\n    delete this._data[resource.type][resource.id];\n  }\n\n  _removeInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {\n    var targetDefinition = Store.types[targetResource.type];\n    var targetFieldName = sourceField.inverse || targetResource.type;\n    var targetField = targetDefinition && targetDefinition[targetFieldName];\n    targetResource._dependents = targetResource._dependents.filter(r => {\n      return !(r.type === sourceResource.type && r.id === sourceResource.id && r.fieldName === sourceFieldName);\n    });\n    if (targetField) {\n      if (targetField.type === \"has-one\") {\n        sourceResource._dependents = sourceResource._dependents.filter(r => {\n          return !(r.type === targetResource.type && r.id === targetResource.id && r.fieldName === targetFieldName);\n        });\n        targetResource[targetFieldName] = null;\n      } else if (targetField.type === \"has-many\") {\n        sourceResource._dependents = sourceResource._dependents.filter(r => {\n          return !(r.type === targetResource.type && r.id === targetResource.id && r.fieldName === targetFieldName);\n        });\n        targetResource[targetFieldName] = targetResource[targetFieldName].filter(r => {\n          return r !== sourceResource;\n        });\n      } else if (targetField.type === \"attr\") {\n        throw new Error(`The the inverse relationship for '${sourceFieldName}' is an attribute ('${targetFieldName}')`);\n      }\n    } else if (sourceField.inverse) {\n      throw new Error(`The the inverse relationship for '${sourceFieldName}' is missing ('${sourceField.inverse}')`);\n    }\n  }\n\n}\n\nStore.types = {};\n"
+    "content": "export default class Store {\n\n  /**\n   * Creates a field definition for an attribute.\n   *\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.default] - Default value for this field.\n   * @return {Object} - Field definition.\n   */\n  static attr(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.attr(null, name);\n    } else {\n      return {\n        type: \"attr\",\n        default: options && options.default,\n        deserialize: function (data, key) {\n          return data.attributes && data.attributes[name || key];\n        }\n      };\n    }\n  }\n\n  /**\n   * Creates a field definition for an has-one relationship.\n   *\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.inverse] - Name of the inverse relationship.\n   * @return {Object} - Field definition.\n   */\n  static hasOne(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.hasOne(null, name);\n    } else {\n      return {\n        type: \"has-one\",\n        inverse: options && options.inverse,\n        deserialize: function (data, key) {\n          name = name || key;\n          if (data.relationships && data.relationships[name]) {\n            if (data.relationships[name].data === null) {\n              return null;\n            } else if (data.relationships[name].data) {\n              return this.find(data.relationships[name].data.type, data.relationships[name].data.id);\n            }\n          }\n        }\n      };\n    }\n  }\n\n  /**\n   * Creates a field definition for an has-many relationship.\n   *\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.inverse] - Name of the inverse relationship.\n   * @return {Object} - Field definition.\n   */\n  static hasMany(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.hasMany(null, name);\n    } else {\n      return {\n        type: \"has-many\",\n        default: [],\n        inverse: options && options.inverse,\n        deserialize: function (data, key) {\n          name = name || key;\n          if (data.relationships && data.relationships[name]) {\n            if (data.relationships[name].data === null) {\n              return [];\n            } else if (data.relationships[name].data) {\n              return data.relationships[name].data.map((c) => {\n                return this.find(c.type, c.id);\n              });\n            }\n          }\n        }\n      };\n    }\n  }\n\n  constructor() {\n    this._data = {};\n    this._types = {};\n  }\n\n  /**\n   * Add an individual resource to the store. This is used internally by the\n   * `push()` method.\n   *\n   * @param {Object} object - Resource Object to add. See:\n                            http://jsonapi.org/format/#document-resource-objects\n   * @return {undefined} - Nothing.\n   */\n  add(object) {\n    if (object) {\n      if (object.type && object.id) {\n        let resource = this.find(object.type, object.id);\n        let definition = this._types[object.type];\n        Object.keys(definition).forEach(fieldName => {\n          this._addField(object, resource, definition, fieldName);\n        });\n      } else {\n        throw new TypeError(`The data must have a type and id`);\n      }\n    } else {\n      throw new TypeError(`You must provide data to add`);\n    }\n  }\n\n  /**\n   * Defines a type of resource.\n   *\n   * @param {string} name - Name of the resource.\n   * @param {Object} defition - The resource's definition.\n   * @return {undefined} - Nothing.\n   */\n  define(name, defition) {\n    this._types[name] = defition;\n  }\n\n  /**\n   * Find a resource or entire collection of resources.\n   *\n   * NOTE: If the resource hasn't been loaded via an add() or push() call it\n   * will be automatically created when find is called.\n   *\n   * @param {!string} type - Type of the resource(s) to find.\n   * @param {string} [id] - The id of the resource to find. If omitted all\n   *                        resources of the type will be returned.\n   * @return {Object|Object[]} - Either the resource or an array of resources.\n   */\n  find(type, id) {\n    var definition;\n    if (type) {\n      definition = this._types[type];\n      if (definition) {\n        this._data[type] = this._data[type] || {};\n        if (id) {\n          if (!this._data[type][id]) {\n            this._data[type][id] = {\n              _dependents: [],\n              type: type,\n              id: id\n            };\n            Object.keys(definition).forEach(key => {\n              this._data[type][id][key] = definition[key].default;\n            });\n          }\n          return this._data[type][id];\n        } else {\n          return Object.keys(this._data[type]).map(x => this._data[type][x]);\n        }\n      } else {\n        throw new TypeError(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new TypeError(`You must provide a type`);\n    }\n  }\n\n  /**\n   * Add a JSON API response to the store. This method can be used to handle a\n   * successful GET or POST response from the server.\n   *\n   * @param {Object} root - Top Level Object to push. See:\n                            http://jsonapi.org/format/#document-top-level\n   * @return {undefined} - Nothing.\n   */\n  push(root) {\n    if (root.data.constructor === Array) {\n      root.data.forEach(x => this.add(x));\n    } else {\n      this.add(root.data);\n    }\n    if (root.included) {\n      root.included.forEach(x => this.add(x));\n    }\n  }\n\n  /**\n   * Remove a resource or collection of resources from the store.\n   *\n   * @param {!string} type - Type of the resource(s) to remove.\n   * @param {string} [id] - The id of the resource to remove. If omitted all\n   *                        resources of the type will be removed.\n   * @return {undefined} - Nothing.\n   */\n  remove(type, id) {\n    if (type) {\n      if (this._types[type]) {\n        if (id) {\n          let resource = this._data[type][id];\n          if (resource) {\n            this._remove(resource);\n          }\n        } else {\n          Object.keys(this._data[type]).forEach(id => this.remove(type, id));\n        }\n      } else {\n        throw new TypeError(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new TypeError(`You must provide a type to remove`);\n    }\n  }\n\n  _addField(object, resource, definition, fieldName) {\n    var field = definition[fieldName];\n    var newValue = field.deserialize.call(this, object, fieldName);\n    if (typeof newValue !== \"undefined\") {\n      if (field.type === \"has-one\") {\n        if (resource[fieldName]) {\n          this._removeInverseRelationship(resource, fieldName, resource[fieldName], field);\n        }\n        if (newValue) {\n          this._addInverseRelationship(resource, fieldName, newValue, field);\n        }\n      } else if (field.type === \"has-many\") {\n        resource[fieldName].forEach(r => {\n          if (resource[fieldName].indexOf(r) !== -1) {\n            this._removeInverseRelationship(resource, fieldName, r, field);\n          }\n        });\n        newValue.forEach(r => {\n          this._addInverseRelationship(resource, fieldName, r, field);\n        });\n      }\n      resource[fieldName] = newValue;\n    }\n  }\n\n  _addInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {\n    var targetDefinition = this._types[targetResource.type];\n    var targetFieldName = sourceField.inverse || targetResource.type;\n    var targetField = targetDefinition && targetDefinition[targetFieldName];\n    targetResource._dependents.push({ type: sourceResource.type, id: sourceResource.id, fieldName: sourceFieldName });\n    if (targetField) {\n      if (targetField.type === \"has-one\") {\n        sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });\n        targetResource[targetFieldName] = sourceResource;\n      } else if (targetField.type === \"has-many\") {\n        sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });\n        if (targetResource[targetFieldName].indexOf(sourceResource) === -1) {\n          targetResource[targetFieldName].push(sourceResource);\n        }\n      } else if (targetField.type === \"attr\") {\n        throw new Error(`The the inverse relationship for '${sourceFieldName}' is an attribute ('${targetFieldName}')`);\n      }\n    } else if (sourceField.inverse) {\n      throw new Error(`The the inverse relationship for '${sourceFieldName}' is missing ('${sourceField.inverse}')`);\n    }\n  }\n\n  _remove(resource) {\n    resource._dependents.forEach(dependent => {\n      let dependentResource = this._data[dependent.type][dependent.id];\n      switch (this._types[dependent.type][dependent.fieldName].type) {\n        case \"has-one\": {\n          dependentResource[dependent.fieldName] = null;\n          break;\n        }\n        case \"has-many\": {\n          let index = dependentResource[dependent.fieldName].indexOf(resource);\n          if (index !== -1) {\n            dependentResource[dependent.fieldName].splice(index, 1);\n          }\n          break;\n        }\n        default: {\n          break;\n        }\n      }\n      // TODO: This only needs to be run once for each dependent.\n      dependentResource._dependents = dependentResource._dependents.filter(d => {\n        return !(d.type === resource.type && d.id === resource.id);\n      });\n    });\n    delete this._data[resource.type][resource.id];\n  }\n\n  _removeInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {\n    var targetDefinition = this._types[targetResource.type];\n    var targetFieldName = sourceField.inverse || targetResource.type;\n    var targetField = targetDefinition && targetDefinition[targetFieldName];\n    targetResource._dependents = targetResource._dependents.filter(r => {\n      return !(r.type === sourceResource.type && r.id === sourceResource.id && r.fieldName === sourceFieldName);\n    });\n    if (targetField) {\n      if (targetField.type === \"has-one\") {\n        sourceResource._dependents = sourceResource._dependents.filter(r => {\n          return !(r.type === targetResource.type && r.id === targetResource.id && r.fieldName === targetFieldName);\n        });\n        targetResource[targetFieldName] = null;\n      } else if (targetField.type === \"has-many\") {\n        sourceResource._dependents = sourceResource._dependents.filter(r => {\n          return !(r.type === targetResource.type && r.id === targetResource.id && r.fieldName === targetFieldName);\n        });\n        targetResource[targetFieldName] = targetResource[targetFieldName].filter(r => {\n          return r !== sourceResource;\n        });\n      } else if (targetField.type === \"attr\") {\n        throw new Error(`The the inverse relationship for '${sourceFieldName}' is an attribute ('${targetFieldName}')`);\n      }\n    } else if (sourceField.inverse) {\n      throw new Error(`The the inverse relationship for '${sourceFieldName}' is missing ('${sourceField.inverse}')`);\n    }\n  }\n\n}\n"
   },
   {
     "kind": "class",
@@ -215,6 +215,23 @@
     }
   },
   {
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_types",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#_types",
+    "access": null,
+    "description": null,
+    "lineNumber": 88,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
     "kind": "method",
     "static": false,
     "variation": null,
@@ -223,7 +240,7 @@
     "longname": "src/store.js~Store#add",
     "access": null,
     "description": "Add an individual resource to the store. This is used internally by the\n`push()` method.",
-    "lineNumber": 98,
+    "lineNumber": 99,
     "params": [
       {
         "nullable": null,
@@ -242,7 +259,49 @@
         "undefined"
       ],
       "spread": false,
-      "description": "Doesn't return anything."
+      "description": "Nothing."
+    },
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "define",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#define",
+    "access": null,
+    "description": "Defines a type of resource.",
+    "lineNumber": 122,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "name",
+        "description": "Name of the resource."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "defition",
+        "description": "The resource's definition."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "undefined"
+      ],
+      "spread": false,
+      "description": "Nothing."
     },
     "generator": false
   },
@@ -255,7 +314,7 @@
     "longname": "src/store.js~Store#find",
     "access": null,
     "description": "Find a resource or entire collection of resources.\n\nNOTE: If the resource hasn't been loaded via an add() or push() call it\nwill be automatically created when find is called.",
-    "lineNumber": 125,
+    "lineNumber": 137,
     "params": [
       {
         "nullable": false,
@@ -298,7 +357,7 @@
     "longname": "src/store.js~Store#push",
     "access": null,
     "description": "Add a JSON API response to the store. This method can be used to handle a\nsuccessful GET or POST response from the server.",
-    "lineNumber": 162,
+    "lineNumber": 174,
     "params": [
       {
         "nullable": null,
@@ -317,7 +376,7 @@
         "undefined"
       ],
       "spread": false,
-      "description": "Doesn't return anything."
+      "description": "Nothing."
     },
     "generator": false
   },
@@ -330,7 +389,7 @@
     "longname": "src/store.js~Store#remove",
     "access": null,
     "description": "Remove a resource or collection of resources from the store.",
-    "lineNumber": 181,
+    "lineNumber": 193,
     "params": [
       {
         "nullable": false,
@@ -359,7 +418,7 @@
         "undefined"
       ],
       "spread": false,
-      "description": "Doesn't return anything."
+      "description": "Nothing."
     },
     "generator": false
   },
@@ -372,7 +431,7 @@
     "longname": "src/store.js~Store#_addField",
     "access": null,
     "description": null,
-    "lineNumber": 200,
+    "lineNumber": 212,
     "undocument": true,
     "params": [
       {
@@ -411,7 +470,7 @@
     "longname": "src/store.js~Store#_addInverseRelationship",
     "access": null,
     "description": null,
-    "lineNumber": 225,
+    "lineNumber": 237,
     "undocument": true,
     "params": [
       {
@@ -450,7 +509,7 @@
     "longname": "src/store.js~Store#_remove",
     "access": null,
     "description": null,
-    "lineNumber": 247,
+    "lineNumber": 259,
     "undocument": true,
     "params": [
       {
@@ -471,7 +530,7 @@
     "longname": "src/store.js~Store#_removeInverseRelationship",
     "access": null,
     "description": null,
-    "lineNumber": 274,
+    "lineNumber": 286,
     "undocument": true,
     "params": [
       {
