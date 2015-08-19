@@ -82,6 +82,10 @@ bower i json-api-store
 
 Grab the [store.js](https://raw.githubusercontent.com/haydn/json-api-store/master/dist/store.js) file.
 
+## Documentation
+
+Documentation is available in the `docs` directory. Online documentation is coming soon.
+
 ## Roadmap
 
 - support for pluralisations/pseudonyms
