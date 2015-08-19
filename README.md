@@ -78,7 +78,7 @@ npm i json-api-store
 bower i json-api-store
 ```
 
-#### Manual
+#### Manually
 
 Grab the [store.js](https://raw.githubusercontent.com/haydn/json-api-store/master/dist/store.js) file.
 
