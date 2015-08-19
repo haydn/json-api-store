@@ -56,16 +56,11 @@ store.push({
   ]
 });
 
-// Get the product from the store.
-var product = store.find("products", "1");
-// Get the category from the store.
-var category = store.find("categories", "1");
+store.find("products", "1").title; // "Example Book"
+store.find("categories", "1").title; // "Books"
 
-product.title; // "Example Book"
-category.title; // "Books"
-
-product.category === category; // true
-category.products[0] === product; // true
+store.find("products", "1").category === store.find("categories", "1"); // true
+store.find("categories", "1").products[0] === store.find("products", "1"); // true
 
 ```
 
@@ -86,39 +81,6 @@ bower i json-api-store
 #### Manual
 
 Grab the [store.js](https://raw.githubusercontent.com/haydn/json-api-store/master/dist/store.js) file.
-
-## Documentation
-
-Documentation is available in the `docs` directory. It can be re-generated with
-[esdoc](https://esdoc.org/):
-
-```
-esdoc -c esdoc.json
-```
-
-## Tests
-
-You can run tests once-off with NPM:
-
-```
-npm test
-```
-
-Alternatively, you can run tests in watch mode using
-[nodemon](http://nodemon.io):
-
-```
-nodemon node_modules/jasmine/bin/jasmine.js
-```
-
-## Building
-
-You can rebuild the the output from the source using
-[babel](https://babeljs.io):
-
-```
-babel src/store.js -m umd --module-id Store --compact true --no-comments -o dist/store.js
-```
 
 ## Roadmap
 
