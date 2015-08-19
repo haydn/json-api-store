@@ -108,13 +108,14 @@ babel src/store.js -m umd --module-id Store --compact true --no-comments -o dist
 
 ## Roadmap
 
-- better type definitions (define per instance and optionally use classes)
+- ~~type definitions on instances instead of the Store class~~
 - support for pluralisations/pseudonyms
 - online documentation / website
 - NPM/Bower packages
 - automated release process
-- create, read, update & destroy AJAX methods
 - event listeners for listening to changes
+- create, read, update & destroy AJAX methods
+- ES6 classes for type definitions
 - a way to query the local data?
 - isomorphic?
 - support for links & pagination
