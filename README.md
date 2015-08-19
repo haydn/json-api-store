@@ -71,7 +71,21 @@ category.products[0] === product; // true
 
 ## Installing
 
-Grab the `dist/store.js` file (Bower / NPM options coming soon).
+#### NPM
+
+```
+npm i json-api-store
+```
+
+#### Bower
+
+```
+bower i json-api-store
+```
+
+#### Manual
+
+Grab the [store.js](https://raw.githubusercontent.com/haydn/json-api-store/master/dist/store.js) file.
 
 ## Documentation
 
@@ -108,14 +122,12 @@ babel src/store.js -m umd --module-id Store --compact true --no-comments -o dist
 
 ## Roadmap
 
-- ~~type definitions on instances instead of the Store class~~
 - support for pluralisations/pseudonyms
 - online documentation / website
-- NPM/Bower packages
 - automated release process
 - event listeners for listening to changes
 - create, read, update & destroy AJAX methods
 - ES6 classes for type definitions
 - a way to query the local data?
-- isomorphic?
+- adapters for CRUD actions / isomorphic support?
 - support for links & pagination
