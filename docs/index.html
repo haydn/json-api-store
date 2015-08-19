@@ -111,7 +111,12 @@ product.category === category; // true
 category.products[0] === product; // true</code></pre>
 </code></pre>
 <h2 id="installing">Installing</h2>
-<p>Grab the <code>dist/store.js</code> file (Bower / NPM options coming soon).</p>
+<h4 id="npm">NPM</h4>
+<pre><code><pre class="source-code"><code class="prettyprint">npm i json-api-store</code></pre>
+</code></pre><h4 id="bower">Bower</h4>
+<pre><code><pre class="source-code"><code class="prettyprint">bower i json-api-store</code></pre>
+</code></pre><h4 id="manual">Manual</h4>
+<p>Grab the <a href="https://raw.githubusercontent.com/haydn/json-api-store/master/dist/store.js">store.js</a> file.</p>
 <h2 id="documentation">Documentation</h2>
 <p>Documentation is available in the <code>docs</code> directory. It can be re-generated with
 <a href="https://esdoc.org/">esdoc</a>:</p>
@@ -128,15 +133,14 @@ category.products[0] === product; // true</code></pre>
 <pre><code><pre class="source-code"><code class="prettyprint">babel src/store.js -m umd --module-id Store --compact true --no-comments -o dist/store.js</code></pre>
 </code></pre><h2 id="roadmap">Roadmap</h2>
 <ul>
-<li>better type definitions (define per instance and optionally use classes)</li>
 <li>support for pluralisations/pseudonyms</li>
 <li>online documentation / website</li>
-<li>NPM/Bower packages</li>
 <li>automated release process</li>
-<li>create, read, update &amp; destroy AJAX methods</li>
 <li>event listeners for listening to changes</li>
+<li>create, read, update &amp; destroy AJAX methods</li>
+<li>ES6 classes for type definitions</li>
 <li>a way to query the local data?</li>
-<li>isomorphic?</li>
+<li>adapters for CRUD actions / isomorphic support?</li>
 <li>support for links &amp; pagination</li>
 </ul>
 </div>

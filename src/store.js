@@ -3,6 +3,7 @@ export default class Store {
   /**
    * Creates a field definition for an attribute.
    *
+   * @since 0.1.0
    * @param {string} [name] - Name of the property to map this field from.
    * @param {Object} [options] - An options object.
    * @param {string} [options.default] - Default value for this field.
@@ -25,6 +26,7 @@ export default class Store {
   /**
    * Creates a field definition for an has-one relationship.
    *
+   * @since 0.1.0
    * @param {string} [name] - Name of the property to map this field from.
    * @param {Object} [options] - An options object.
    * @param {string} [options.inverse] - Name of the inverse relationship.
@@ -54,6 +56,7 @@ export default class Store {
   /**
    * Creates a field definition for an has-many relationship.
    *
+   * @since 0.1.0
    * @param {string} [name] - Name of the property to map this field from.
    * @param {Object} [options] - An options object.
    * @param {string} [options.inverse] - Name of the inverse relationship.
@@ -92,6 +95,7 @@ export default class Store {
    * Add an individual resource to the store. This is used internally by the
    * `push()` method.
    *
+   * @since 0.1.0
    * @param {Object} object - Resource Object to add. See:
                             http://jsonapi.org/format/#document-resource-objects
    * @return {undefined} - Nothing.
@@ -115,6 +119,7 @@ export default class Store {
   /**
    * Defines a type of resource.
    *
+   * @since 0.2.0
    * @param {string} name - Name of the resource.
    * @param {Object} defition - The resource's definition.
    * @return {undefined} - Nothing.
@@ -129,6 +134,7 @@ export default class Store {
    * NOTE: If the resource hasn't been loaded via an add() or push() call it
    * will be automatically created when find is called.
    *
+   * @since 0.1.0
    * @param {!string} type - Type of the resource(s) to find.
    * @param {string} [id] - The id of the resource to find. If omitted all
    *                        resources of the type will be returned.
@@ -167,6 +173,7 @@ export default class Store {
    * Add a JSON API response to the store. This method can be used to handle a
    * successful GET or POST response from the server.
    *
+   * @since 0.1.0
    * @param {Object} root - Top Level Object to push. See:
                             http://jsonapi.org/format/#document-top-level
    * @return {undefined} - Nothing.
@@ -185,6 +192,7 @@ export default class Store {
   /**
    * Remove a resource or collection of resources from the store.
    *
+   * @since 0.1.0
    * @param {!string} type - Type of the resource(s) to remove.
    * @param {string} [id] - The id of the resource to remove. If omitted all
    *                        resources of the type will be removed.
