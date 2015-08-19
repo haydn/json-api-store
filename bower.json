@@ -13,18 +13,5 @@
     "node"
   ],
   "license": "MIT",
-  "ignore": [
-    ".gitignore",
-    ".travis.yml",
-    "CONTRIBUTING.md",
-    "LICENSE",
-    "README.md",
-    "bower.json",
-    "docs",
-    "esdoc.json",
-    "example",
-    "package.json",
-    "spec",
-    "src"
-  ]
+  "ignore": [ "*" ]
 }
