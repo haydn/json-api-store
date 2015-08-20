@@ -1,3 +1,5 @@
+import "array.prototype.find";
+
 export default class Store {
 
   /**
