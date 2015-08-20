@@ -131,7 +131,13 @@ export default class Store {
   define(names, definition) {
     names = (names.constructor === Array) ? names : [ names ];
     definition._names = names;
-    names.forEach(name => this._types[name] = definition);
+    names.forEach(name => {
+      if (!this._types[name]) {
+        this._types[name] = definition;
+      } else {
+        throw new Error(`The type '${name}' has already been defined.`);
+      }
+    });
   }
 
   /**

@@ -1,10 +1,10 @@
 var Store = require("../../../src/store");
 
-describe("define", function() {
+describe("define", function () {
 
   var store;
 
-  beforeEach(function() {
+  beforeEach(function () {
     store = new Store();
   });
 
@@ -18,7 +18,7 @@ describe("define", function() {
     expect(store.find("comment", "67")).toBe(store.find("comments", "67"));
     expect(store.find("product", "8")).toBe(store.find("products", "8"));
     store.add({
-      "type": "comment",
+      "type": "comments",
       "id": "1",
       "relationships": {
         "product": {
@@ -29,7 +29,15 @@ describe("define", function() {
         }
       }
     });
-    expect(store.find("product", "1").comments[0]).toBe(store.find("comments", "1"));
+    expect(store.find("product", "1").comments[0]).toBe(store.find("comment", "1"));
+    expect(store.find("comments", "1").product).toBe(store.find("products", "1"));
+  });
+
+  it("must throw an error if you try to define a type that has already been defined", function () {
+    store.define("example", {});
+    expect(function () {
+      store.define([ "sample", "example"], {});
+    }).toThrowError("The type 'example' has already been defined.");
   });
 
 });
