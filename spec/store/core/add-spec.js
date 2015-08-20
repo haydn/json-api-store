@@ -398,6 +398,28 @@ describe("add", function() {
       expect(store.find("products", "45").category).toBe(null);
     });
 
+    it("must use the type's name as a fallback for relationship names when adding resources", function () {
+      store.define("categories", {
+        products: Store.hasMany()
+      });
+      store.define("products", {
+        categories: Store.hasMany()
+      });
+      store.add({
+        "type": "categories",
+        "id": "37",
+        "relationships": {
+          "products": {
+            "data": [
+              { "type": "products", "id": "23" }
+            ]
+          }
+        }
+      });
+      expect(store.find("categories", "37").products).toHaveIds([ "23" ]);
+      expect(store.find("products", "23").categories).toHaveIds([ "37" ]);
+    });
+
   });
 
 });
