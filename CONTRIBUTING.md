@@ -35,6 +35,7 @@ babel src/store.js -m umd --module-id Store --compact true --no-comments -o dist
 1.  Check everything's clean:
 
     ```
+    git checkout master
     git pull
     git push
     git status
@@ -78,4 +79,22 @@ babel src/store.js -m umd --module-id Store --compact true --no-comments -o dist
     git push --tags
     ```
 
-8.  Update the release notes on GitHub.
+8.  Update the website (replace X.X.X with the version number):
+
+    ```
+    cp -R dist ~/Desktop/dist
+    cp -R docs ~/Desktop/docs
+    cp -R example ~/Desktop/example
+    git checkout gh-pages
+    rm -r example
+    cp ~/Desktop/dist/store.js dist/store.vX.X.X.js
+    cp -R ~/Desktop/docs docs/vX.X.X
+    cp -R ~/Desktop/example example
+    rm -r ~/Desktop/dist ~/Desktop/docs ~/Desktop/example
+    sed -i.bak 's/v[0-9].[0-9].[0-9]/vX.X.X/g' index.html && rm index.html.bak
+    git add .
+    git commit -a -m "Release vX.X.X."
+    git push
+    ```
+
+9.  Update the release notes on GitHub.
