@@ -1,3 +1,5 @@
+import "array.prototype.find";
+
 export default class Store {
 
   /**
@@ -96,8 +98,8 @@ export default class Store {
    * `push()` method.
    *
    * @since 0.1.0
-   * @param {Object} object - Resource Object to add. See:
-                            http://jsonapi.org/format/#document-resource-objects
+   * @param {!Object} object - Resource Object to add. See:
+            http://jsonapi.org/format/#document-resource-objects
    * @return {undefined} - Nothing.
    */
   add(object) {
@@ -106,7 +108,9 @@ export default class Store {
         let resource = this.find(object.type, object.id);
         let definition = this._types[object.type];
         Object.keys(definition).forEach(fieldName => {
-          this._addField(object, resource, definition, fieldName);
+          if (fieldName[0] !== "_") {
+            this._addField(object, resource, definition, fieldName);
+          }
         });
       } else {
         throw new TypeError(`The data must have a type and id`);
@@ -120,12 +124,20 @@ export default class Store {
    * Defines a type of resource.
    *
    * @since 0.2.0
-   * @param {string} name - Name of the resource.
-   * @param {Object} defition - The resource's definition.
+   * @param {!string|string[]} names - Name(s) of the resource.
+   * @param {!Object} definition - The resource's definition.
    * @return {undefined} - Nothing.
    */
-  define(name, defition) {
-    this._types[name] = defition;
+  define(names, definition) {
+    names = (names.constructor === Array) ? names : [ names ];
+    definition._names = names;
+    names.forEach(name => {
+      if (!this._types[name]) {
+        this._types[name] = definition;
+      } else {
+        throw new Error(`The type '${name}' has already been defined.`);
+      }
+    });
   }
 
   /**
@@ -141,11 +153,13 @@ export default class Store {
    * @return {Object|Object[]} - Either the resource or an array of resources.
    */
   find(type, id) {
-    var definition;
     if (type) {
-      definition = this._types[type];
+      let definition = this._types[type];
       if (definition) {
-        this._data[type] = this._data[type] || {};
+        if (!this._data[type]) {
+          let collection = {};
+          definition._names.forEach(t => this._data[t] = collection);
+        }
         if (id) {
           if (!this._data[type][id]) {
             this._data[type][id] = {
@@ -154,7 +168,9 @@ export default class Store {
               id: id
             };
             Object.keys(definition).forEach(key => {
-              this._data[type][id][key] = definition[key].default;
+              if (key[0] !== "_") {
+                this._data[type][id][key] = definition[key].default;
+              }
             });
           }
           return this._data[type][id];
@@ -244,23 +260,26 @@ export default class Store {
 
   _addInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {
     var targetDefinition = this._types[targetResource.type];
-    var targetFieldName = sourceField.inverse || sourceResource.type;
-    var targetField = targetDefinition && targetDefinition[targetFieldName];
-    targetResource._dependents.push({ type: sourceResource.type, id: sourceResource.id, fieldName: sourceFieldName });
-    if (targetField) {
-      if (targetField.type === "has-one") {
-        sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });
-        targetResource[targetFieldName] = sourceResource;
-      } else if (targetField.type === "has-many") {
-        sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });
-        if (targetResource[targetFieldName].indexOf(sourceResource) === -1) {
-          targetResource[targetFieldName].push(sourceResource);
+    var sourceDefinition = this._types[sourceResource.type];
+    if (targetDefinition) {
+      let targetFieldName = [ sourceField.inverse ].concat(sourceDefinition._names).find(x => targetDefinition[x]);
+      let targetField = targetDefinition && targetDefinition[targetFieldName];
+      targetResource._dependents.push({ type: sourceResource.type, id: sourceResource.id, fieldName: sourceFieldName });
+      if (targetField) {
+        if (targetField.type === "has-one") {
+          sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });
+          targetResource[targetFieldName] = sourceResource;
+        } else if (targetField.type === "has-many") {
+          sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });
+          if (targetResource[targetFieldName].indexOf(sourceResource) === -1) {
+            targetResource[targetFieldName].push(sourceResource);
+          }
+        } else if (targetField.type === "attr") {
+          throw new Error(`The the inverse relationship for '${sourceFieldName}' is an attribute ('${targetFieldName}')`);
         }
-      } else if (targetField.type === "attr") {
-        throw new Error(`The the inverse relationship for '${sourceFieldName}' is an attribute ('${targetFieldName}')`);
+      } else if (sourceField.inverse) {
+        throw new Error(`The the inverse relationship for '${sourceFieldName}' is missing ('${sourceField.inverse}')`);
       }
-    } else if (sourceField.inverse) {
-      throw new Error(`The the inverse relationship for '${sourceFieldName}' is missing ('${sourceField.inverse}')`);
     }
   }
 

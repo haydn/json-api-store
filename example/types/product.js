@@ -2,8 +2,7 @@ var Product = {
   title: Store.attr(),
   description: Store.attr(),
   categories: Store.hasMany(),
-  // Because the inverse relationship isn't "products" we need provide it).
-  comments: Store.hasMany({ inverse: "product" }),
-  // This relationship is one-way (no iverse relationship).
+  comments: Store.hasMany(),
+  // This relationship is one-way (no inverse relationship).
   relatedProducts: Store.hasMany("related")
 };
