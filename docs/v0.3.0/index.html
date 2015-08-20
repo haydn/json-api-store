@@ -99,42 +99,23 @@ store.push({
   ]
 });
 
-// Get the product from the store.
-var product = store.find(&quot;products&quot;, &quot;1&quot;);
-// Get the category from the store.
-var category = store.find(&quot;categories&quot;, &quot;1&quot;);
+store.find(&quot;products&quot;, &quot;1&quot;).title; // &quot;Example Book&quot;
+store.find(&quot;categories&quot;, &quot;1&quot;).title; // &quot;Books&quot;
 
-product.title; // &quot;Example Book&quot;
-category.title; // &quot;Books&quot;
-
-product.category === category; // true
-category.products[0] === product; // true</code></pre>
+store.find(&quot;products&quot;, &quot;1&quot;).category === store.find(&quot;categories&quot;, &quot;1&quot;); // true
+store.find(&quot;categories&quot;, &quot;1&quot;).products[0] === store.find(&quot;products&quot;, &quot;1&quot;); // true</code></pre>
 </code></pre>
 <h2 id="installing">Installing</h2>
 <h4 id="npm">NPM</h4>
 <pre><code><pre class="source-code"><code class="prettyprint">npm i json-api-store</code></pre>
 </code></pre><h4 id="bower">Bower</h4>
 <pre><code><pre class="source-code"><code class="prettyprint">bower i json-api-store</code></pre>
-</code></pre><h4 id="manual">Manual</h4>
+</code></pre><h4 id="manually">Manually</h4>
 <p>Grab the <a href="https://raw.githubusercontent.com/haydn/json-api-store/master/dist/store.js">store.js</a> file.</p>
 <h2 id="documentation">Documentation</h2>
-<p>Documentation is available in the <code>docs</code> directory. It can be re-generated with
-<a href="https://esdoc.org/">esdoc</a>:</p>
-<pre><code><pre class="source-code"><code class="prettyprint">esdoc -c esdoc.json</code></pre>
-</code></pre><h2 id="tests">Tests</h2>
-<p>You can run tests once-off with NPM:</p>
-<pre><code><pre class="source-code"><code class="prettyprint">npm test</code></pre>
-</code></pre><p>Alternatively, you can run tests in watch mode using
-<a href="http://nodemon.io">nodemon</a>:</p>
-<pre><code><pre class="source-code"><code class="prettyprint">nodemon node_modules/jasmine/bin/jasmine.js</code></pre>
-</code></pre><h2 id="building">Building</h2>
-<p>You can rebuild the the output from the source using
-<a href="https://babeljs.io">babel</a>:</p>
-<pre><code><pre class="source-code"><code class="prettyprint">babel src/store.js -m umd --module-id Store --compact true --no-comments -o dist/store.js</code></pre>
-</code></pre><h2 id="roadmap">Roadmap</h2>
+<p>Documentation is available in the <code>docs</code> directory. Online documentation is coming soon.</p>
+<h2 id="roadmap">Roadmap</h2>
 <ul>
-<li>support for pluralisations/pseudonyms</li>
-<li>online documentation / website</li>
 <li>automated release process</li>
 <li>event listeners for listening to changes</li>
 <li>create, read, update &amp; destroy AJAX methods</li>
