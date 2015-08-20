@@ -76,6 +76,7 @@ babel src/store.js -m umd --module-id Store --compact true --no-comments -o dist
 7.  Push:
 
     ```
+    git push
     git push --tags
     ```
 
@@ -87,6 +88,8 @@ babel src/store.js -m umd --module-id Store --compact true --no-comments -o dist
     cp -R example ~/Desktop/example
     git checkout gh-pages
     rm -r example
+    rm example dist/store.js
+    cp ~/Desktop/dist/store.js dist/store.js
     cp ~/Desktop/dist/store.js dist/store.vX.X.X.js
     cp -R ~/Desktop/docs docs/vX.X.X
     cp -R ~/Desktop/example example
