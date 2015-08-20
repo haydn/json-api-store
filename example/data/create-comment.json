@@ -1,0 +1,14 @@
+{
+  "data": {
+    "type": "comments",
+    "id": "2",
+    "attributes": {
+      "body": "Yeah, it's rad!"
+    },
+    "relationships": {
+      "product": {
+        "data": { "type": "products", "id": "1" }
+      }
+    }
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "data": {
+    "type": "products",
+    "id": "1",
+    "attributes": {
+      "title": "A Book",
+      "description": "A really good book."
+    },
+    "relationships": {
+      "categories": {
+        "data": [
+          { "type": "categories", "id": "1" },
+          { "type": "categories", "id": "2" },
+          { "type": "categories", "id": "3" }
+        ]
+      },
+      "comments": {
+        "data": [
+          { "type": "comments", "id": "1" }
+        ]
+      },
+      "related": {
+        "data": [
+          { "type": "products", "id": "2" }
+        ]
+      }
+    }
+  },
+  "included": [
+    {
+      "type": "categories",
+      "id": "1",
+      "attributes": {
+        "name": "Books"
+      }
+    },
+    {
+      "type": "categories",
+      "id": "2",
+      "attributes": {
+        "name": "Popular"
+      }
+    },
+    {
+      "type": "categories",
+      "id": "3",
+      "attributes": {
+        "name": "New"
+      }
+    },
+    {
+      "type": "comments",
+      "id": "1",
+      "attributes": {
+        "body": "I love this book!"
+      }
+    },
+    {
+      "type": "products",
+      "id": "2",
+      "attributes": {
+        "title": "Another Book"
+      },
+      "relationships": {
+        "categories": {
+          "data": [
+            { "type": "categories", "id": "1" }
+          ]
+        },
+        "comments": {
+          "data": []
+        },
+        "related": {
+          "data": []
+        }
+      }
+    }
+  ]
+}

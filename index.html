@@ -62,17 +62,24 @@
         font-family: 'Open Sans', sans-serif;
         font-size: 18px;
         line-height: 1.375;
+        text-align: center;
       }
       a {
-        color: #ff9900;
+        color: #f90;
         text-decoration: none;
       }
       a:hover {
-        background: #ff9900;
+        background: #f90;
         color: #fff;
       }
+      .code {
+        font-family: monospace;
+        border: 1px solid #eee;
+        padding: 0.6875em;
+        text-align: left;
+      }
       .container {
-        max-width: 960px;
+        max-width: 720px;
         margin: 0 auto;
       }
       .header {
@@ -85,6 +92,13 @@
       }
       .header > * + * {
         margin-top: 0.6875em;
+      }
+      .nav {
+        border-bottom: 1px solid #eee;
+        padding: 1.375em;
+      }
+      .nav > a + a {
+        margin-left: 1em;
       }
       .main {
         padding: 1.375em;
@@ -112,8 +126,30 @@
       .norm sub:before {
         content: "\2014  ";
       }
-      .fa {
+      .fa-fw {
         color: #000;
+      }
+      .button {
+        background: #f90;
+        border-radius: 4px;
+        color: #fff;
+        padding: 0.34375em 1.375em;
+      }
+      @media all and (max-width: 500px) {
+        .nav {
+          text-align: left;
+          line-height: 2.0625;
+          padding-left: 0;
+          padding-right: 0;
+        }
+        .nav > a {
+          display: block;
+          padding-left: 20%;
+          padding-right: 20%;
+        }
+        .nav > a + a {
+          margin-left: 0;
+        }
       }
     </style>
     <script type="text/javascript">
@@ -138,12 +174,20 @@
         <h1>JSON API Store</h1>
         <p>A lightweight JavaScript library for using JSON API in the browser.</p>
       </header>
-      <main class="main norm">
-        <ul>
-          <li><a href="http://github.com/haydn/json-api-store"><i class="fa fa-fw fa-github"></i> GitHub Repo</a></li>
-          <!-- <li><a href="docs/0.2.0"><i class="fa fa-fw fa-book"></i> Documentation</a></li> -->
-          <!-- <li><a href="example"><i class="fa fa-fw fa-gears"></i> Example</a></li> -->
-        </ul>
+      <nav class="nav">
+        <a href="http://github.com/haydn/json-api-store"><i class="fa fa-fw fa-github"></i> GitHub Repo</a>
+        <a href="docs/v0.0.0/index.html"><i class="fa fa-fw fa-book"></i> Documentation</a>
+        <a href="example/index.html"><i class="fa fa-fw fa-gears"></i> Example</a>
+      </nav>
+      <main class="main">
+        <div>
+          <a class="button" href="dist/store.js" download="store.js">
+            <i class="fa fa-cloud-download"></i>
+            Download v0.0.0
+          </a>
+        </div>
+        <pre class="code">npm i json-api-store</pre>
+        <pre class="code">bower i json-api-store</pre>
       </main>
     </div>
   </body>
