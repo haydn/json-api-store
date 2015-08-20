@@ -244,7 +244,7 @@ export default class Store {
 
   _addInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {
     var targetDefinition = this._types[targetResource.type];
-    var targetFieldName = sourceField.inverse || targetResource.type;
+    var targetFieldName = sourceField.inverse || sourceResource.type;
     var targetField = targetDefinition && targetDefinition[targetFieldName];
     targetResource._dependents.push({ type: sourceResource.type, id: sourceResource.id, fieldName: sourceFieldName });
     if (targetField) {
@@ -293,7 +293,7 @@ export default class Store {
 
   _removeInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {
     var targetDefinition = this._types[targetResource.type];
-    var targetFieldName = sourceField.inverse || targetResource.type;
+    var targetFieldName = sourceField.inverse || sourceResource.type;
     var targetField = targetDefinition && targetDefinition[targetFieldName];
     targetResource._dependents = targetResource._dependents.filter(r => {
       return !(r.type === sourceResource.type && r.id === sourceResource.id && r.fieldName === sourceFieldName);
