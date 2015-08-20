@@ -88,7 +88,6 @@ Documentation is available in the `docs` directory. Online documentation is comi
 
 ## Roadmap
 
-- support for pluralisations/pseudonyms
 - online documentation / website
 - automated release process
 - event listeners for listening to changes
