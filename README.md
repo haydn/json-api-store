@@ -17,13 +17,13 @@ now you can just push the responses from your own requests to the store:
 var store = new Store();
 
 // Define the "categories" type.
-store.define("categories", {
+store.define([ "categories", "category" ], {
   title: Store.attr(),
-  products: Store.hasMany({ inverse: "category" })
+  products: Store.hasMany()
 });
 
 // Define the "products" type.
-store.define("products", {
+store.define([ "products", "product" ], {
   title: Store.attr(),
   category: Store.hasOne()
 });
