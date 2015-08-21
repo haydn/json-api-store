@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../">
+  <title data-ice="title">src/store.js | API Document</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  
+  
+</head>
+<body class="layout-container">
+
+<header>
+  <a href="./">Home</a>
+  <a href="identifiers.html">Identifier</a>
+  <a href="source.html">Source</a>
+  
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+</header>
+
+<nav class="navigation" data-ice="nav"><div data-ice="classWrap">
+  <h2>Class</h2>
+  <ul>
+    
+  <li data-ice="classDoc"><span><a href="class/src/store.js~Store.html">Store</a></span></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">src/store.js</h1>
+<pre class="source-code line-number"><code class="prettyprint linenums" data-ice="content">import &quot;array.prototype.find&quot;;
+
+export default class Store {
+
+  /**
+   * Creates a field definition for an attribute.
+   *
+   * @since 0.1.0
+   * @param {string} [name] - Name of the property to map this field from.
+   * @param {Object} [options] - An options object.
+   * @param {string} [options.default] - Default value for this field.
+   * @return {Object} - Field definition.
+   */
+  static attr(name, options) {
+    if (name &amp;&amp; typeof name === &apos;object&apos;) {
+      return Store.attr(null, name);
+    } else {
+      return {
+        type: &quot;attr&quot;,
+        default: options &amp;&amp; options.default,
+        deserialize: function (data, key) {
+          return data.attributes &amp;&amp; data.attributes[name || key];
+        }
+      };
+    }
+  }
+
+  /**
+   * Creates a field definition for an has-one relationship.
+   *
+   * @since 0.1.0
+   * @param {string} [name] - Name of the property to map this field from.
+   * @param {Object} [options] - An options object.
+   * @param {string} [options.inverse] - Name of the inverse relationship.
+   * @return {Object} - Field definition.
+   */
+  static hasOne(name, options) {
+    if (name &amp;&amp; typeof name === &apos;object&apos;) {
+      return Store.hasOne(null, name);
+    } else {
+      return {
+        type: &quot;has-one&quot;,
+        inverse: options &amp;&amp; options.inverse,
+        deserialize: function (data, key) {
+          name = name || key;
+          if (data.relationships &amp;&amp; data.relationships[name]) {
+            if (data.relationships[name].data === null) {
+              return null;
+            } else if (data.relationships[name].data) {
+              return this.find(data.relationships[name].data.type, data.relationships[name].data.id);
+            }
+          }
+        }
+      };
+    }
+  }
+
+  /**
+   * Creates a field definition for an has-many relationship.
+   *
+   * @since 0.1.0
+   * @param {string} [name] - Name of the property to map this field from.
+   * @param {Object} [options] - An options object.
+   * @param {string} [options.inverse] - Name of the inverse relationship.
+   * @return {Object} - Field definition.
+   */
+  static hasMany(name, options) {
+    if (name &amp;&amp; typeof name === &apos;object&apos;) {
+      return Store.hasMany(null, name);
+    } else {
+      return {
+        type: &quot;has-many&quot;,
+        default: [],
+        inverse: options &amp;&amp; options.inverse,
+        deserialize: function (data, key) {
+          name = name || key;
+          if (data.relationships &amp;&amp; data.relationships[name]) {
+            if (data.relationships[name].data === null) {
+              return [];
+            } else if (data.relationships[name].data) {
+              return data.relationships[name].data.map((c) =&gt; {
+                return this.find(c.type, c.id);
+              });
+            }
+          }
+        }
+      };
+    }
+  }
+
+  constructor() {
+    this._data = {};
+    this._types = {};
+  }
+
+  /**
+   * Add an individual resource to the store. This is used internally by the
+   * `push()` method.
+   *
+   * @since 0.1.0
+   * @param {!Object} object - Resource Object to add. See:
+            http://jsonapi.org/format/#document-resource-objects
+   * @return {undefined} - Nothing.
+   */
+  add(object) {
+    if (object) {
+      if (object.type &amp;&amp; object.id) {
+        let resource = this.find(object.type, object.id);
+        let definition = this._types[object.type];
+        Object.keys(definition).forEach(fieldName =&gt; {
+          if (fieldName[0] !== &quot;_&quot;) {
+            this._addField(object, resource, definition, fieldName);
+          }
+        });
+      } else {
+        throw new TypeError(`The data must have a type and id`);
+      }
+    } else {
+      throw new TypeError(`You must provide data to add`);
+    }
+  }
+
+  /**
+   * Defines a type of resource.
+   *
+   * @since 0.2.0
+   * @param {!string|string[]} names - Name(s) of the resource.
+   * @param {!Object} definition - The resource&apos;s definition.
+   * @return {undefined} - Nothing.
+   */
+  define(names, definition) {
+    names = (names.constructor === Array) ? names : [ names ];
+    definition._names = names;
+    names.forEach(name =&gt; {
+      if (!this._types[name]) {
+        this._types[name] = definition;
+      } else {
+        throw new Error(`The type &apos;${name}&apos; has already been defined.`);
+      }
+    });
+  }
+
+  /**
+   * Find a resource or entire collection of resources.
+   *
+   * NOTE: If the resource hasn&apos;t been loaded via an add() or push() call it
+   * will be automatically created when find is called.
+   *
+   * @since 0.1.0
+   * @param {!string} type - Type of the resource(s) to find.
+   * @param {string} [id] - The id of the resource to find. If omitted all
+   *                        resources of the type will be returned.
+   * @return {Object|Object[]} - Either the resource or an array of resources.
+   */
+  find(type, id) {
+    if (type) {
+      let definition = this._types[type];
+      if (definition) {
+        if (!this._data[type]) {
+          let collection = {};
+          definition._names.forEach(t =&gt; this._data[t] = collection);
+        }
+        if (id) {
+          if (!this._data[type][id]) {
+            this._data[type][id] = {
+              _dependents: [],
+              type: type,
+              id: id
+            };
+            Object.keys(definition).forEach(key =&gt; {
+              if (key[0] !== &quot;_&quot;) {
+                this._data[type][id][key] = definition[key].default;
+              }
+            });
+          }
+          return this._data[type][id];
+        } else {
+          return Object.keys(this._data[type]).map(x =&gt; this._data[type][x]);
+        }
+      } else {
+        throw new TypeError(`Unknown type &apos;${type}&apos;`);
+      }
+    } else {
+      throw new TypeError(`You must provide a type`);
+    }
+  }
+
+  /**
+   * Add a JSON API response to the store. This method can be used to handle a
+   * successful GET or POST response from the server.
+   *
+   * @since 0.1.0
+   * @param {Object} root - Top Level Object to push. See:
+                            http://jsonapi.org/format/#document-top-level
+   * @return {undefined} - Nothing.
+   */
+  push(root) {
+    if (root.data.constructor === Array) {
+      root.data.forEach(x =&gt; this.add(x));
+    } else {
+      this.add(root.data);
+    }
+    if (root.included) {
+      root.included.forEach(x =&gt; this.add(x));
+    }
+  }
+
+  /**
+   * Remove a resource or collection of resources from the store.
+   *
+   * @since 0.1.0
+   * @param {!string} type - Type of the resource(s) to remove.
+   * @param {string} [id] - The id of the resource to remove. If omitted all
+   *                        resources of the type will be removed.
+   * @return {undefined} - Nothing.
+   */
+  remove(type, id) {
+    if (type) {
+      if (this._types[type]) {
+        if (id) {
+          let resource = this._data[type][id];
+          if (resource) {
+            this._remove(resource);
+          }
+        } else {
+          Object.keys(this._data[type]).forEach(id =&gt; this.remove(type, id));
+        }
+      } else {
+        throw new TypeError(`Unknown type &apos;${type}&apos;`);
+      }
+    } else {
+      throw new TypeError(`You must provide a type to remove`);
+    }
+  }
+
+  _addField(object, resource, definition, fieldName) {
+    var field = definition[fieldName];
+    var newValue = field.deserialize.call(this, object, fieldName);
+    if (typeof newValue !== &quot;undefined&quot;) {
+      if (field.type === &quot;has-one&quot;) {
+        if (resource[fieldName]) {
+          this._removeInverseRelationship(resource, fieldName, resource[fieldName], field);
+        }
+        if (newValue) {
+          this._addInverseRelationship(resource, fieldName, newValue, field);
+        }
+      } else if (field.type === &quot;has-many&quot;) {
+        resource[fieldName].forEach(r =&gt; {
+          if (resource[fieldName].indexOf(r) !== -1) {
+            this._removeInverseRelationship(resource, fieldName, r, field);
+          }
+        });
+        newValue.forEach(r =&gt; {
+          this._addInverseRelationship(resource, fieldName, r, field);
+        });
+      }
+      resource[fieldName] = newValue;
+    }
+  }
+
+  _addInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {
+    var targetDefinition = this._types[targetResource.type];
+    var sourceDefinition = this._types[sourceResource.type];
+    if (targetDefinition) {
+      let targetFieldName = [ sourceField.inverse ].concat(sourceDefinition._names).find(x =&gt; targetDefinition[x]);
+      let targetField = targetDefinition &amp;&amp; targetDefinition[targetFieldName];
+      targetResource._dependents.push({ type: sourceResource.type, id: sourceResource.id, fieldName: sourceFieldName });
+      if (targetField) {
+        if (targetField.type === &quot;has-one&quot;) {
+          sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });
+          targetResource[targetFieldName] = sourceResource;
+        } else if (targetField.type === &quot;has-many&quot;) {
+          sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });
+          if (targetResource[targetFieldName].indexOf(sourceResource) === -1) {
+            targetResource[targetFieldName].push(sourceResource);
+          }
+        } else if (targetField.type === &quot;attr&quot;) {
+          throw new Error(`The the inverse relationship for &apos;${sourceFieldName}&apos; is an attribute (&apos;${targetFieldName}&apos;)`);
+        }
+      } else if (sourceField.inverse) {
+        throw new Error(`The the inverse relationship for &apos;${sourceFieldName}&apos; is missing (&apos;${sourceField.inverse}&apos;)`);
+      }
+    }
+  }
+
+  _remove(resource) {
+    resource._dependents.forEach(dependent =&gt; {
+      let dependentResource = this._data[dependent.type][dependent.id];
+      switch (this._types[dependent.type][dependent.fieldName].type) {
+        case &quot;has-one&quot;: {
+          dependentResource[dependent.fieldName] = null;
+          break;
+        }
+        case &quot;has-many&quot;: {
+          let index = dependentResource[dependent.fieldName].indexOf(resource);
+          if (index !== -1) {
+            dependentResource[dependent.fieldName].splice(index, 1);
+          }
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+      // TODO: This only needs to be run once for each dependent.
+      dependentResource._dependents = dependentResource._dependents.filter(d =&gt; {
+        return !(d.type === resource.type &amp;&amp; d.id === resource.id);
+      });
+    });
+    delete this._data[resource.type][resource.id];
+  }
+
+  _removeInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {
+    var targetDefinition = this._types[targetResource.type];
+    var targetFieldName = sourceField.inverse || sourceResource.type;
+    var targetField = targetDefinition &amp;&amp; targetDefinition[targetFieldName];
+    targetResource._dependents = targetResource._dependents.filter(r =&gt; {
+      return !(r.type === sourceResource.type &amp;&amp; r.id === sourceResource.id &amp;&amp; r.fieldName === sourceFieldName);
+    });
+    if (targetField) {
+      if (targetField.type === &quot;has-one&quot;) {
+        sourceResource._dependents = sourceResource._dependents.filter(r =&gt; {
+          return !(r.type === targetResource.type &amp;&amp; r.id === targetResource.id &amp;&amp; r.fieldName === targetFieldName);
+        });
+        targetResource[targetFieldName] = null;
+      } else if (targetField.type === &quot;has-many&quot;) {
+        sourceResource._dependents = sourceResource._dependents.filter(r =&gt; {
+          return !(r.type === targetResource.type &amp;&amp; r.id === targetResource.id &amp;&amp; r.fieldName === targetFieldName);
+        });
+        targetResource[targetFieldName] = targetResource[targetFieldName].filter(r =&gt; {
+          return r !== sourceResource;
+        });
+      } else if (targetField.type === &quot;attr&quot;) {
+        throw new Error(`The the inverse relationship for &apos;${sourceFieldName}&apos; is an attribute (&apos;${targetFieldName}&apos;)`);
+      }
+    } else if (sourceField.inverse) {
+      throw new Error(`The the inverse relationship for &apos;${sourceFieldName}&apos; is missing (&apos;${sourceField.inverse}&apos;)`);
+    }
+  }
+
+}
+</code></pre>
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.2.1)</span></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>
