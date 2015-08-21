@@ -85,13 +85,3 @@ Grab the [store.js](https://raw.githubusercontent.com/haydn/json-api-store/maste
 ## Documentation
 
 Documentation is available in the `docs` directory. Online documentation is coming soon.
-
-## Roadmap
-
-- automated release process
-- event listeners for listening to changes
-- create, read, update & destroy AJAX methods
-- ES6 classes for type definitions
-- a way to query the local data?
-- adapters for CRUD actions / isomorphic support?
-- support for links & pagination
