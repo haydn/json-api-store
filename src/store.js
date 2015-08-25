@@ -89,7 +89,9 @@ export default class Store {
   }
 
   constructor() {
+    this._collectionListeners = { "added": {}, "updated": {}, "removed": {} };
     this._data = {};
+    this._resourceListeners = { "added": {}, "updated": {}, "removed": {} };
     this._types = {};
   }
 
@@ -105,6 +107,7 @@ export default class Store {
   add(object) {
     if (object) {
       if (object.type && object.id) {
+        let event = this._data[object.type] && this._data[object.type][object.id] ? "updated" : "added";
         let resource = this.find(object.type, object.id);
         let definition = this._types[object.type];
         Object.keys(definition).forEach(fieldName => {
@@ -112,6 +115,12 @@ export default class Store {
             this._addField(object, resource, definition, fieldName);
           }
         });
+        if (this._resourceListeners[event][object.type] && this._resourceListeners[event][object.type][object.id]) {
+           this._resourceListeners[event][object.type][object.id].forEach(x => x[0].call(x[1], resource));
+        }
+        if (this._collectionListeners[event][object.type]) {
+          this._collectionListeners[event][object.type].forEach(x => x[0].call(x[1], resource));
+        }
       } else {
         throw new TypeError(`The data must have a type and id`);
       }
@@ -186,6 +195,61 @@ export default class Store {
   }
 
   /**
+   * Unregister an event listener that was registered with on().
+   *
+   * @since 0.4.0
+   * @param {string} event - Name of the event.
+   * @param {string} type - Name of resource to originally passed to on().
+   * @param {string} [id] - ID of the resource to originally passed to on().
+   * @param {function} callback - Function originally passed to on().
+   * @param {Object} [context] - Context originally passed to on().
+   * @return {undefined} - Nothing.
+   */
+  off(event, type, id, callback, context) {
+    if (id && ({}).toString.call(id) === '[object Function]') {
+      this.off.call(this, event, type, null, id, callback);
+    } else {
+      if (id) {
+        if (this._resourceListeners[event][type] && this._resourceListeners[event][type][id]) {
+          this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id].filter(x => {
+            return !(x[0] === callback && x[1] === context);
+          });
+        }
+      } else if (this._collectionListeners[event][type]) {
+        this._collectionListeners[event][type] = this._collectionListeners[event][type].filter(x => {
+          return !(x[0] === callback && x[1] === context);
+        });
+      }
+    }
+  }
+
+  /**
+   * Register an event listener: "added", "updated" or "removed".
+   *
+   * @since 0.4.0
+   * @param {string} event - Name of the event.
+   * @param {string} type - Name of resource to watch.
+   * @param {string} [id] - ID of the resource to watch.
+   * @param {function} callback - Function to call when the event occurs.
+   * @param {Object} [context] - Context in which to call the callback.
+   * @return {undefined} - Nothing.
+   */
+  on(event, type, id, callback, context) {
+    if (id && ({}).toString.call(id) === '[object Function]') {
+      this.on.call(this, event, type, null, id, callback);
+    } else {
+      if (id) {
+        this._resourceListeners[event][type] = this._resourceListeners[event][type] || {};
+        this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id] || [];
+        this._resourceListeners[event][type][id].push([ callback, context ]);
+      } else {
+        this._collectionListeners[event][type] = this._collectionListeners[event][type] || [];
+        this._collectionListeners[event][type].push([ callback, context ]);
+      }
+    }
+  }
+
+  /**
    * Add a JSON API response to the store. This method can be used to handle a
    * successful GET or POST response from the server.
    *
@@ -221,6 +285,12 @@ export default class Store {
           let resource = this._data[type][id];
           if (resource) {
             this._remove(resource);
+            if (this._resourceListeners["removed"][type] && this._resourceListeners["removed"][type][id]) {
+               this._resourceListeners["removed"][type][id].forEach(x => x[0].call(x[1], resource));
+            }
+            if (this._collectionListeners["removed"][type]) {
+              this._collectionListeners["removed"][type].forEach(x => x[0].call(x[1], resource));
+            }
           }
         } else {
           Object.keys(this._data[type]).forEach(id => this.remove(type, id));
