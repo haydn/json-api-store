@@ -210,17 +210,20 @@ export default class Store {
         if (id && ({}).toString.call(id) === '[object Function]') {
           this.off.call(this, event, type, null, id, callback);
         } else {
-          if (id) {
-            if (this._resourceListeners[event][type] && this._resourceListeners[event][type][id]) {
-              this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id].filter(x => {
+          // TODO: Performance-wise, this can be made way better. There shouldn't be a need to maintain separate lists.
+          this._types[type]._names.forEach(type => {
+            if (id) {
+              if (this._resourceListeners[event][type] && this._resourceListeners[event][type][id]) {
+                this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id].filter(x => {
+                  return x[0] !== callback;
+                });
+              }
+            } else if (this._collectionListeners[event][type]) {
+              this._collectionListeners[event][type] = this._collectionListeners[event][type].filter(x => {
                 return x[0] !== callback;
               });
             }
-          } else if (this._collectionListeners[event][type]) {
-            this._collectionListeners[event][type] = this._collectionListeners[event][type].filter(x => {
-              return x[0] !== callback;
-            });
-          }
+          });
         }
       } else {
         throw new Error(`Unknown type '${type}'`);
@@ -247,14 +250,21 @@ export default class Store {
         if (id && ({}).toString.call(id) === '[object Function]') {
           this.on.call(this, event, type, null, id, callback);
         } else {
-          if (id) {
-            this._resourceListeners[event][type] = this._resourceListeners[event][type] || {};
-            this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id] || [];
-            this._resourceListeners[event][type][id].push([ callback, context ]);
-          } else {
-            this._collectionListeners[event][type] = this._collectionListeners[event][type] || [];
-            this._collectionListeners[event][type].push([ callback, context ]);
-          }
+          // TODO: Performance-wise, this can be made way better. There shouldn't be a need to maintain separate lists.
+          this._types[type]._names.forEach(type => {
+            if (id) {
+              this._resourceListeners[event][type] = this._resourceListeners[event][type] || {};
+              this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id] || [];
+              if (!this._resourceListeners[event][type][id].find(x => x[0] === callback)) {
+                this._resourceListeners[event][type][id].push([ callback, context ]);
+              }
+            } else {
+              this._collectionListeners[event][type] = this._collectionListeners[event][type] || [];
+              if (!this._collectionListeners[event][type].find(x => x[0] === callback)) {
+                this._collectionListeners[event][type].push([ callback, context ]);
+              }
+            }
+          });
         }
       } else {
         throw new Error(`Unknown type '${type}'`);

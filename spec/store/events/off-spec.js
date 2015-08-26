@@ -11,7 +11,7 @@ describe("off", function() {
     };
     context = {};
     spyOn(listener, "handler");
-    store.define("products", {});
+    store.define([ "products", "product" ], {});
   });
 
   it("must remove event handlers", function () {
@@ -59,6 +59,16 @@ describe("off", function() {
     expect(function () {
       store.off("added", "foo", "1", listener.handler);
     }).toThrowError("Unknown type 'foo'");
+  });
+
+  it("must remove listeners added with a different pseudonym", function () {
+    store.on("added", "products", listener.handler, context);
+    store.off("added", "product", listener.handler);
+    store.add({
+      "type": "products",
+      "id": "1"
+    });
+    expect(listener.handler.calls.count()).toEqual(0);
   });
 
 });
