@@ -31,12 +31,12 @@ describe("off", function() {
     });
     store.remove("products", "1");
     expect(listener.handler.calls.count()).toEqual(6);
-    store.off("added", "products", "1", listener.handler, context);
-    store.off("added", "products", listener.handler, context);
-    store.off("updated", "products", "1", listener.handler, context);
-    store.off("updated", "products", listener.handler, context);
-    store.off("removed", "products", "1", listener.handler, context);
-    store.off("removed", "products", listener.handler, context);
+    store.off("added", "products", "1", listener.handler);
+    store.off("added", "products", listener.handler);
+    store.off("updated", "products", "1", listener.handler);
+    store.off("updated", "products", listener.handler);
+    store.off("removed", "products", "1", listener.handler);
+    store.off("removed", "products", listener.handler);
     store.add({
       "type": "products",
       "id": "1"
@@ -49,8 +49,16 @@ describe("off", function() {
     expect(listener.handler.calls.count()).toEqual(6);
   });
 
-  it("must allow context to be optional");
+  it("must throw an error when an unknown event is passed", function () {
+    expect(function () {
+      store.off("foo", "products", "1", listener.handler);
+    }).toThrowError("Unknown event 'foo'");
+  });
 
-  it("must throw an error when an unknown event is passed");
+  it("must throw an error if the type has not been defined", function () {
+    expect(function () {
+      store.off("added", "foo", "1", listener.handler);
+    }).toThrowError("Unknown type 'foo'");
+  });
 
 });

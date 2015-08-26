@@ -56,7 +56,7 @@
     "no-with": 2,
     "radix": 2,
     "semi": 2,
-    "valid-jsdoc": 1,
+    "valid-jsdoc": 2,
     "vars-on-top": 2,
     "wrap-iife": 2,
     "yoda": 2

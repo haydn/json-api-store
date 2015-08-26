@@ -94,6 +94,16 @@ describe("on", function() {
     expect(listener.handler.calls.count()).toEqual(0);
   });
 
-  it("must throw an error when an unknown event is passed");
+  it("must throw an error when an unknown event is passed", function () {
+    expect(function () {
+      store.on("foo", "products", "1", listener.handler, context);
+    }).toThrowError("Unknown event 'foo'");
+  });
+
+  it("must throw an error if the type has not been defined", function () {
+    expect(function () {
+      store.on("added", "foo", "1", listener.handler, context);
+    }).toThrowError("Unknown type 'foo'");
+  });
 
 });

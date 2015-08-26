@@ -202,24 +202,31 @@ export default class Store {
    * @param {string} type - Name of resource to originally passed to on().
    * @param {string} [id] - ID of the resource to originally passed to on().
    * @param {function} callback - Function originally passed to on().
-   * @param {Object} [context] - Context originally passed to on().
    * @return {undefined} - Nothing.
    */
-  off(event, type, id, callback, context) {
-    if (id && ({}).toString.call(id) === '[object Function]') {
-      this.off.call(this, event, type, null, id, callback);
-    } else {
-      if (id) {
-        if (this._resourceListeners[event][type] && this._resourceListeners[event][type][id]) {
-          this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id].filter(x => {
-            return !(x[0] === callback && x[1] === context);
-          });
+  off(event, type, id, callback) {
+    if (this._resourceListeners[event] && this._collectionListeners[event]) {
+      if (this._types[type]) {
+        if (id && ({}).toString.call(id) === '[object Function]') {
+          this.off.call(this, event, type, null, id, callback);
+        } else {
+          if (id) {
+            if (this._resourceListeners[event][type] && this._resourceListeners[event][type][id]) {
+              this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id].filter(x => {
+                return x[0] !== callback;
+              });
+            }
+          } else if (this._collectionListeners[event][type]) {
+            this._collectionListeners[event][type] = this._collectionListeners[event][type].filter(x => {
+              return x[0] !== callback;
+            });
+          }
         }
-      } else if (this._collectionListeners[event][type]) {
-        this._collectionListeners[event][type] = this._collectionListeners[event][type].filter(x => {
-          return !(x[0] === callback && x[1] === context);
-        });
+      } else {
+        throw new Error(`Unknown type '${type}'`);
       }
+    } else {
+      throw new Error(`Unknown event '${event}'`);
     }
   }
 
@@ -235,17 +242,25 @@ export default class Store {
    * @return {undefined} - Nothing.
    */
   on(event, type, id, callback, context) {
-    if (id && ({}).toString.call(id) === '[object Function]') {
-      this.on.call(this, event, type, null, id, callback);
-    } else {
-      if (id) {
-        this._resourceListeners[event][type] = this._resourceListeners[event][type] || {};
-        this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id] || [];
-        this._resourceListeners[event][type][id].push([ callback, context ]);
+    if (this._resourceListeners[event] && this._collectionListeners[event]) {
+      if (this._types[type]) {
+        if (id && ({}).toString.call(id) === '[object Function]') {
+          this.on.call(this, event, type, null, id, callback);
+        } else {
+          if (id) {
+            this._resourceListeners[event][type] = this._resourceListeners[event][type] || {};
+            this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id] || [];
+            this._resourceListeners[event][type][id].push([ callback, context ]);
+          } else {
+            this._collectionListeners[event][type] = this._collectionListeners[event][type] || [];
+            this._collectionListeners[event][type].push([ callback, context ]);
+          }
+        }
       } else {
-        this._collectionListeners[event][type] = this._collectionListeners[event][type] || [];
-        this._collectionListeners[event][type].push([ callback, context ]);
+        throw new Error(`Unknown type '${type}'`);
       }
+    } else {
+      throw new Error(`Unknown event '${event}'`);
     }
   }
 
