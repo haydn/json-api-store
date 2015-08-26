@@ -2,10 +2,11 @@ var Store = require("../../../src/store");
 
 describe("update", function() {
 
-  var store;
+  var adapter, store;
 
   beforeEach(function() {
-    store = new Store();
+    adapter = new Store.AjaxAdapter();
+    store = new Store(adapter);
   });
 
 });
