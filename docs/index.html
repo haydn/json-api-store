@@ -60,13 +60,13 @@ now you can just push the responses from your own requests to the store:</p>
 var store = new Store();
 
 // Define the &quot;categories&quot; type.
-store.define(&quot;categories&quot;, {
+store.define([ &quot;categories&quot;, &quot;category&quot; ], {
   title: Store.attr(),
-  products: Store.hasMany({ inverse: &quot;category&quot; })
+  products: Store.hasMany()
 });
 
 // Define the &quot;products&quot; type.
-store.define(&quot;products&quot;, {
+store.define([ &quot;products&quot;, &quot;product&quot; ], {
   title: Store.attr(),
   category: Store.hasOne()
 });
@@ -114,16 +114,6 @@ store.find(&quot;categories&quot;, &quot;1&quot;).products[0] === store.find(&qu
 <p>Grab the <a href="https://raw.githubusercontent.com/haydn/json-api-store/master/dist/store.js">store.js</a> file.</p>
 <h2 id="documentation">Documentation</h2>
 <p>Documentation is available in the <code>docs</code> directory. Online documentation is coming soon.</p>
-<h2 id="roadmap">Roadmap</h2>
-<ul>
-<li>automated release process</li>
-<li>event listeners for listening to changes</li>
-<li>create, read, update &amp; destroy AJAX methods</li>
-<li>ES6 classes for type definitions</li>
-<li>a way to query the local data?</li>
-<li>adapters for CRUD actions / isomorphic support?</li>
-<li>support for links &amp; pagination</li>
-</ul>
 </div>
 </div>
 

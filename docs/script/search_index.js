@@ -360,6 +360,18 @@ window.esdocSearchIndex = [
     "method"
   ],
   [
+    "src/store.js~store#off",
+    "class/src/store.js~Store.html#instance-method-off",
+    "src/store.js~Store#off",
+    "method"
+  ],
+  [
+    "src/store.js~store#on",
+    "class/src/store.js~Store.html#instance-method-on",
+    "src/store.js~Store#on",
+    "method"
+  ],
+  [
     "src/store.js~store#push",
     "class/src/store.js~Store.html#instance-method-push",
     "src/store.js~Store#push",
