@@ -71,7 +71,7 @@ describe("on", function() {
       "id": "1"
     });
     expect(listener.handler.calls.count()).toEqual(0);
-    store.remove("products", "1");
+    store.remove({ type: "products", id: "1" });
     expect(listener.handler).toHaveBeenCalledWith(store.find("products", "1"));
     expect(listener.handler.calls.mostRecent().object).toBe(context);
   });
@@ -83,7 +83,7 @@ describe("on", function() {
       "id": "1"
     });
     expect(listener.handler.calls.count()).toEqual(0);
-    store.remove("products", "1");
+    store.remove({ type: "products", id: "1" });
     expect(listener.handler).toHaveBeenCalledWith(store.find("products", "1"));
     expect(listener.handler.calls.mostRecent().object).toBe(context);
   });
