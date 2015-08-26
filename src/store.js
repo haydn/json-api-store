@@ -285,36 +285,42 @@ export default class Store {
   }
 
   /**
-   * Remove a resource or collection of resources from the store.
+   * Remove a resource from the store.
    *
    * @since 0.1.0
-   * @param {!string} type - Type of the resource(s) to remove.
-   * @param {string} [id] - The id of the resource to remove. If omitted all
-   *                        resources of the type will be removed.
+   * @param {!Object} object - Resource object to remove.
+   * @param {!string} object.type - Type of the resource to remove.
+   * @param {!string} object.id - ID of the resource to remove.
    * @return {undefined} - Nothing.
    */
-  remove(type, id) {
-    if (type) {
-      if (this._types[type]) {
-        if (id) {
-          let resource = this._data[type][id];
-          if (resource) {
-            this._remove(resource);
-            if (this._resourceListeners["removed"][type] && this._resourceListeners["removed"][type][id]) {
-               this._resourceListeners["removed"][type][id].forEach(x => x[0].call(x[1], resource));
+  remove(object) {
+    if (typeof object === 'string' || object instanceof String) {
+      console.warn("WARNING: The `store.remove(type, id)` syntax has been deprecated in favour of `store.remove({ type: type, id: id })`.");
+      this.remove({ type: object, id: arguments[1] });
+    } else {
+      if (object && object.type) {
+        if (this._types[object.type]) {
+          if (object.id) {
+            let resource = this._data[object.type][object.id];
+            if (resource) {
+              this._remove(resource);
+              if (this._resourceListeners["removed"][object.type] && this._resourceListeners["removed"][object.type][object.id]) {
+                 this._resourceListeners["removed"][object.type][object.id].forEach(x => x[0].call(x[1], resource));
+              }
+              if (this._collectionListeners["removed"][object.type]) {
+                this._collectionListeners["removed"][object.type].forEach(x => x[0].call(x[1], resource));
+              }
             }
-            if (this._collectionListeners["removed"][type]) {
-              this._collectionListeners["removed"][type].forEach(x => x[0].call(x[1], resource));
-            }
+          } else {
+            console.warn("WARNING: Calling `store.remove()` without an ID has been deprecated. Instead, use `store.find(type).forEach(x => store.remove(x))`.");
+            Object.keys(this._data[object.type]).forEach(id => this.remove({ type: object.type, id: id }));
           }
         } else {
-          Object.keys(this._data[type]).forEach(id => this.remove(type, id));
+          throw new TypeError(`Unknown type '${object.type}'`);
         }
       } else {
-        throw new TypeError(`Unknown type '${type}'`);
+        throw new TypeError(`You must provide a type to remove`);
       }
-    } else {
-      throw new TypeError(`You must provide a type to remove`);
     }
   }
 

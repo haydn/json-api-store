@@ -29,7 +29,7 @@ describe("off", function() {
       "type": "products",
       "id": "1"
     });
-    store.remove("products", "1");
+    store.remove({ type: "products", id: "1" });
     expect(listener.handler.calls.count()).toEqual(6);
     store.off("added", "products", "1", listener.handler);
     store.off("added", "products", listener.handler);
@@ -45,7 +45,7 @@ describe("off", function() {
       "type": "products",
       "id": "1"
     });
-    store.remove("products", "1");
+    store.remove({ type: "products", id: "1" });
     expect(listener.handler.calls.count()).toEqual(6);
   });
 
