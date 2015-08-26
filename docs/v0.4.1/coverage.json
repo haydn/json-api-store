@@ -1,0 +1,11 @@
+{
+  "coverage": "83.33%",
+  "expectCount": 12,
+  "actualCount": 10,
+  "files": {
+    "src/store.js": {
+      "expectCount": 12,
+      "actualCount": 10
+    }
+  }
+}
