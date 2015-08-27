@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+if [ "$TARGET" = "browser" ]; then
+  node_modules/.bin/browserify spec/client.js -t babelify | node_modules/.bin/tape-run
+  exit $?
+fi
+
+if [ "$TARGET" = "node" ]; then
+  node_modules/.bin/babel-node spec/server.js
+  exit $?
+fi
+
+node_modules/.bin/babel-node spec/server.js | node_modules/.bin/tap-dot || true
+node_modules/.bin/browserify spec/client.js -t babelify | node_modules/.bin/tape-run | node_modules/.bin/tap-dot || true
+exit 0
