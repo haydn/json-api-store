@@ -129,6 +129,10 @@ export default class Store {
     }
   }
 
+  create() {
+    throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
+  }
+
   /**
    * Defines a type of resource.
    *
@@ -147,6 +151,10 @@ export default class Store {
         throw new Error(`The type '${name}' has already been defined.`);
       }
     });
+  }
+
+  destroy() {
+    throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
   }
 
   /**
@@ -192,6 +200,10 @@ export default class Store {
     } else {
       throw new TypeError(`You must provide a type`);
     }
+  }
+
+  load() {
+    throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
   }
 
   /**
@@ -326,6 +338,10 @@ export default class Store {
     } else {
       throw new TypeError(`You must provide a type to remove`);
     }
+  }
+
+  update() {
+    throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
   }
 
   _addField(object, resource, definition, fieldName) {
