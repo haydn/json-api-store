@@ -1,6 +1,11 @@
 {
   "env": {
-    "jasmine": true
+    "es6": true
   },
-  "rules": {}
+  "ecmaFeatures": {
+    "modules": true
+  },
+  "rules": {
+    "key-spacing": 0
+  }
 }

@@ -1,21 +1,10 @@
-var Store = require("../../../src/store");
+import test from "tape";
+import Store from "../../../src/store";
 
-describe("store", function () {
-
-  var store;
-
-  beforeEach(function () {
-    store = new Store();
-  });
-
-  describe("without an adapter", function () {
-
-    it("must throw an error if load is called when there isn't an adapter", function () {
-      expect(function () {
-        store.load();
-      }).toThrowError("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
-    });
-
-  });
-
+test("load must throw an error if it is called when there isn't an adapter", function (t) {
+  var store = new Store();
+  t.plan(1);
+  t.throws(function () {
+    store.load();
+  }, /Adapter missing\. Specify an adapter when creating the store: `var store = new Store\(adapter\);`/);
 });

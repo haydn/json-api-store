@@ -1,0 +1,14 @@
+import "./store/clud/create-spec";
+import "./store/clud/destroy-spec";
+import "./store/clud/load-spec";
+import "./store/clud/update-spec";
+import "./store/core/add-spec";
+import "./store/core/define-spec";
+import "./store/core/find-spec";
+import "./store/core/push-spec";
+import "./store/core/remove-spec";
+import "./store/events/off-spec";
+import "./store/events/on-spec";
+import "./store/fields/attr-spec";
+import "./store/fields/has-many-spec";
+import "./store/fields/has-one-spec";

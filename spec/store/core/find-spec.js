@@ -1,52 +1,55 @@
-var Store = require("../../../src/store");
+import test from "tape";
+import Store from "../../../src/store";
 
-describe("find", function() {
+test("find must, when an id is provided, return an object with 'type' and 'id' properties", function (t) {
+  var store = new Store();
+  t.plan(2);
+  store.define("products", {});
+  t.equal(store.find("products", "23").type, "products");
+  t.equal(store.find("products", "74").id, "74");
+});
 
-  var store;
+test("find must return the same object if called with the same arguments", function (t) {
+  var store = new Store();
+  t.plan(1);
+  store.define("products", {});
+  t.equal(store.find("products", "23"), store.find("products", "23"));
+});
 
-  beforeEach(function() {
-    store = new Store();
-  });
+test("find must return an array of objects when no id is provided", function (t) {
+  var store = new Store();
+  t.plan(1);
+  store.define("products", {});
+  store.find("products", "1");
+  t.notEqual(store.find("products").indexOf(store.find("products", "1")), -1);
+});
 
-  it("must, when an id is provided, return an object with 'type' and 'id' properties", function () {
-    store.define("products", {});
-    expect(store.find("products", "23").type).toBe("products");
-    expect(store.find("products", "74").id).toBe("74");
-  });
-
-  it("must return the same object if called with the same arguments", function () {
-    store.define("products", {});
-    expect(store.find("products", "23")).toBe(store.find("products", "23"));
-  });
-
-  it("must return an array of objects when no id is provided", function () {
-    store.define("products", {});
+test("find must throw an error when trying to find an unknown resource type", function (t) {
+  var store = new Store();
+  t.plan(2);
+  t.throws(function () {
+    store.find("products");
+  }, /Unknown type 'products'/);
+  t.throws(function () {
     store.find("products", "1");
-    expect(store.find("products")).toContain(store.find("products", "1"));
-  });
+  }, /Unknown type 'products'/);
+});
 
-  it("must throw an error when trying to find an unknown resource type", function () {
-    expect(function () {
-      store.find("products");
-    }).toThrowError(TypeError, "Unknown type 'products'");
-    expect(function () {
-      store.find("products", "1");
-    }).toThrowError(TypeError, "Unknown type 'products'");
-  });
+test("find must throw an error when called without arguments", function (t) {
+  var store = new Store();
+  t.plan(1);
+  t.throws(function () {
+    store.find();
+  }, /You must provide a type/);
+});
 
-  it("must throw an error when called without arguments", function () {
-    expect(function () {
-      store.find();
-    }).toThrowError(TypeError, "You must provide a type");
+test("find must give fields their default values", function (t) {
+  var store = new Store();
+  t.plan(1);
+  store.define("products", {
+    title: {
+      default: "example"
+    }
   });
-
-  it("must give fields their default values", function () {
-    store.define("products", {
-      title: {
-        default: "example"
-      }
-    });
-    expect(store.find("products", "1").title).toBe("example");
-  });
-
+  t.equal(store.find("products", "1").title, "example");
 });

@@ -5,13 +5,22 @@
   "repository": "haydn/json-api-store",
   "main": "dist/store.js",
   "scripts": {
-    "test": "./node_modules/.bin/jasmine"
+    "test": "npm run test-server && npm run test-client",
+    "test-pretty": "npm run test-server | node_modules/.bin/tap-spec && npm run test-client | node_modules/.bin/tap-spec || true",
+    "build": "node_modules/.bin/babel src/store.js -m umd --module-id Store",
+    "test-server": "node_modules/.bin/babel-node spec/server-test.js",
+    "test-client": "node_modules/.bin/browserify spec/client-test.js -t babelify | node_modules/.bin/tape-run"
   },
   "author": "Haydn Ewers",
   "license": "MIT",
   "devDependencies": {
     "babel": "^5.8.21",
-    "jasmine": "^2.3.2"
+    "babelify": "^6.2.0",
+    "browserify": "^11.0.1",
+    "sinon": "^1.16.1",
+    "tap-spec": "^4.1.0",
+    "tape": "^4.2.0",
+    "tape-run": "^1.1.0"
   },
   "dependencies": {
     "array.prototype.find": "^1.0.0"
