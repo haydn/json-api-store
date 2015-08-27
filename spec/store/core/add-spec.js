@@ -1,10 +1,10 @@
 var Store = require("../../../src/store");
 
-describe("add", function() {
+describe("add", function () {
 
   var store;
 
-  beforeEach(function() {
+  beforeEach(function () {
     store = new Store();
   });
 
@@ -167,7 +167,7 @@ describe("add", function() {
           }
         }
       });
-      expect(store.find("categories", "1").products).toHaveIds([ "10", "20" ]);
+      expect(store.find("categories", "1").products.map(x => x.id).sort()).toEqual([ "10", "20" ]);
     });
 
     it("must setup inverse many-to-many relationships", function () {
@@ -199,7 +199,7 @@ describe("add", function() {
           }
         }
       });
-      expect(store.find("products", "1").categories).toHaveIds([ "10", "20" ]);
+      expect(store.find("products", "1").categories.map(x => x.id).sort()).toEqual([ "10", "20" ]);
     });
 
     it("must setup inverse many-to-one relationships", function () {
@@ -350,7 +350,7 @@ describe("add", function() {
           }
         }
       });
-      expect(store.find("categories", "34").products).toHaveIds([ "44" ]);
+      expect(store.find("categories", "34").products.map(x => x.id).sort()).toEqual([ "44" ]);
       store.add({
         "type": "products",
         "id": "44",
@@ -416,8 +416,8 @@ describe("add", function() {
           }
         }
       });
-      expect(store.find("categories", "37").products).toHaveIds([ "23" ]);
-      expect(store.find("products", "23").categories).toHaveIds([ "37" ]);
+      expect(store.find("categories", "37").products.map(x => x.id).sort()).toEqual([ "23" ]);
+      expect(store.find("products", "23").categories.map(x => x.id).sort()).toEqual([ "37" ]);
     });
 
   });

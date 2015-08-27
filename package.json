@@ -5,7 +5,7 @@
   "repository": "haydn/json-api-store",
   "main": "dist/store.js",
   "scripts": {
-    "test": "node_modules/jasmine/bin/jasmine.js"
+    "test": "./node_modules/.bin/jasmine"
   },
   "author": "Haydn Ewers",
   "license": "MIT",

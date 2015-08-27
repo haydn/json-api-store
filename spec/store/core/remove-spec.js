@@ -68,9 +68,9 @@ describe("remove", function() {
         }
       }
     });
-    expect(store.find("categories", "1").products).toHaveIds([ "10", "11" ]);
+    expect(store.find("categories", "1").products.map(x => x.id).sort()).toEqual([ "10", "11" ]);
     store.remove("products", "10");
-    expect(store.find("categories", "1").products).toHaveIds([ "11" ]);
+    expect(store.find("categories", "1").products.map(x => x.id).sort()).toEqual([ "11" ]);
     store.remove("categories", "1");
     expect(store.find("products", "11").category).toBe(null);
   });
