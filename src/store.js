@@ -1,4 +1,5 @@
 import "array.prototype.find";
+import AjaxAdapter from "./ajax-adapter";
 
 export default class Store {
 
@@ -88,7 +89,8 @@ export default class Store {
     }
   }
 
-  constructor() {
+  constructor(adapter) {
+    this._adapter = adapter;
     this._collectionListeners = { "added": {}, "updated": {}, "removed": {} };
     this._data = {};
     this._resourceListeners = { "added": {}, "updated": {}, "removed": {} };
@@ -129,8 +131,12 @@ export default class Store {
     }
   }
 
-  create() {
-    throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
+  create(type, data, callback) {
+    if (this._adapter) {
+      this._adapter.create(this, type, data, callback);
+    } else {
+      throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
+    }
   }
 
   /**
@@ -153,8 +159,12 @@ export default class Store {
     });
   }
 
-  destroy() {
-    throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
+  destroy(type, id, callback) {
+    if (this._adapter) {
+      this._adapter.destroy(this, type, id, callback);
+    } else {
+      throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
+    }
   }
 
   /**
@@ -202,8 +212,12 @@ export default class Store {
     }
   }
 
-  load() {
-    throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
+  load(type, id, callback) {
+    if (this._adapter) {
+      this._adapter.load(this, type, id, callback);
+    } else {
+      throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
+    }
   }
 
   /**
@@ -340,8 +354,12 @@ export default class Store {
     }
   }
 
-  update() {
-    throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
+  update(type, id, data, callback) {
+    if (this._adapter) {
+      this._adapter.update(this, type, id, data, callback);
+    } else {
+      throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
+    }
   }
 
   _addField(object, resource, definition, fieldName) {
@@ -450,3 +468,5 @@ export default class Store {
   }
 
 }
+
+Store.AjaxAdapter = AjaxAdapter;
