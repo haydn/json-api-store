@@ -1,15 +1,29 @@
 #!/usr/bin/env bash
 
 if [ "$TARGET" = "browser" ]; then
-  node_modules/.bin/browserify spec/client.js -t babelify | node_modules/.bin/tape-run
+  ./node_modules/.bin/browserify spec/client.js -t babelify | node_modules/.bin/tape-run
   exit $?
 fi
 
 if [ "$TARGET" = "node" ]; then
-  node_modules/.bin/babel-node spec/server.js
+  ./node_modules/.bin/babel-node spec/server.js
   exit $?
 fi
 
-node_modules/.bin/babel-node spec/server.js | node_modules/.bin/tap-dot || true
-node_modules/.bin/browserify spec/client.js -t babelify | node_modules/.bin/tape-run | node_modules/.bin/tap-dot || true
-exit 0
+result=1
+
+if [ "$1" = "--watch" ]; then
+  ./node_modules/.bin/chokidar './src/**/*.js' './spec/**/*.js' -c './scripts/test'
+  result=$?
+else
+  echo "Testing in node:"
+  ./node_modules/.bin/babel-node spec/server.js | node_modules/.bin/tap-spec
+  result=$?
+  if [ $result -eq 0 ]; then
+    echo "Testing in browser:"
+    ./node_modules/.bin/browserify spec/client.js -t babelify | node_modules/.bin/tape-run | node_modules/.bin/tap-spec
+    result=$?
+  fi
+fi
+
+exit $result

@@ -5,8 +5,11 @@
   "repository": "haydn/json-api-store",
   "main": "dist/store.js",
   "scripts": {
-    "test": "scripts/test",
-    "build": "node_modules/.bin/babel src/store.js -m umd --module-id Store"
+    "build": "./node_modules/.bin/babel src/store.js -m umd --module-id Store --compact --no-comments -o dist/store.js -s",
+    "docs": "./node_modules/.bin/esdoc -c esdoc.json",
+    "release": "./scripts/release",
+    "start": "./scripts/test --watch",
+    "test": "./scripts/test"
   },
   "author": "Haydn Ewers",
   "license": "MIT",
@@ -14,8 +17,10 @@
     "babel": "^5.8.21",
     "babelify": "^6.2.0",
     "browserify": "^11.0.1",
+    "chokidar-cli": "^1.0.1",
+    "esdoc": "^0.2.2",
     "sinon": "^1.16.1",
-    "tap-dot": "^1.0.0",
+    "tap-spec": "^4.1.0",
     "tape": "^4.2.0",
     "tape-run": "^1.1.0"
   },
