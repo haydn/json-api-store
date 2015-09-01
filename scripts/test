@@ -10,20 +10,16 @@ if [ "$TARGET" = "node" ]; then
   exit $?
 fi
 
-result=1
-
 if [ "$1" = "--watch" ]; then
   ./node_modules/.bin/chokidar './src/**/*.js' './spec/**/*.js' -c './scripts/test'
-  result=$?
 else
-  echo "Testing in node:"
+  set -o pipefail
+  echo "NODE:"
   ./node_modules/.bin/babel-node spec/server.js | node_modules/.bin/tap-spec
-  result=$?
-  if [ $result -eq 0 ]; then
-    echo "Testing in browser:"
-    ./node_modules/.bin/browserify spec/client.js -t babelify | node_modules/.bin/tape-run | node_modules/.bin/tap-spec
-    result=$?
+  if [ $? -eq 0 ]; then
+    echo "BROWSER:"
+    ./node_modules/.bin/browserify spec/client.js -d -t babelify | node_modules/.bin/tape-run | node_modules/.bin/tap-spec
   fi
 fi
 
-exit $result
+exit $?
