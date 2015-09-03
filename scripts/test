@@ -15,10 +15,10 @@ if [ "$1" = "--watch" ]; then
 else
   set -o pipefail
   echo "NODE:"
-  ./node_modules/.bin/babel-node spec/server.js | node_modules/.bin/tap-spec
+  ./node_modules/.bin/babel-node spec/server.js | node_modules/.bin/faucet
   if [ $? -eq 0 ]; then
     echo "BROWSER:"
-    ./node_modules/.bin/browserify spec/client.js -d -t babelify | node_modules/.bin/tape-run | node_modules/.bin/tap-spec
+    ./node_modules/.bin/browserify spec/client.js -d -t babelify | node_modules/.bin/tape-run | node_modules/.bin/faucet
   fi
 fi
 
