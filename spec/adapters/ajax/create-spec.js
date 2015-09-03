@@ -2,7 +2,7 @@ import test from "tape-catch";
 import sinon from "sinon";
 import Store from "../../../src/store";
 
-test.skip("create must post a resource to the server and add it to the store", function (t) {
+test("create must post a resource to the server and add it to the store on success", function (t) {
   var server = sinon.fakeServer.create({ autoRespond: true });
   var adapter = new Store.AjaxAdapter();
   var store = new Store(adapter);
@@ -26,9 +26,15 @@ test.skip("create must post a resource to the server and add it to the store", f
       }
     })
   ]);
-  store.create("products", { title: "My Book" }, function (product) {
+  store.create({ type: "products", title: "My Book" }, function (product) {
     t.equal(product.title, "My Book");
     t.equal(store.find("products", "9").title, "My Book");
   });
   server.restore();
 });
+
+test.skip("must throw an error if resource is missing a 'type' property");
+
+test.skip("must call the error callback if an undefined type is included");
+
+test.skip("must call the error callback if the server responds with a non-2xx code");

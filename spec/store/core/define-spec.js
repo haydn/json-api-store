@@ -36,3 +36,11 @@ test("define must throw an error if you try to define a type that has already be
     store.define([ "sample", "example"], {});
   }, /The type 'example' has already been defined\./);
 });
+
+test("define must throw an error if you try to define a type that without providing a definition", function (t) {
+  var store = new Store();
+  t.plan(1);
+  t.throws(function () {
+    store.define("example");
+  }, /You must provide a definition for the type 'example'\./);
+});

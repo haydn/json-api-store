@@ -17,7 +17,7 @@ test("update must call the update method prodvided by the adapter", function (t)
   var cb = function () {};
   t.plan(2);
   t.doesNotThrow(function () {
-    store.update("foo", "1", a, cb);
+    store.update(a, cb);
   }, "should not throw an error");
-  t.ok(adatper.update.calledWith(store, "foo", "1", a, cb), "should call adapter with the same params");
+  t.ok(adatper.update.calledWith(store, a, cb), "should call adapter with the same params");
 });

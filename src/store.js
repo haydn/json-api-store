@@ -21,6 +21,9 @@ export default class Store {
         default: options && options.default,
         deserialize: function (data, key) {
           return data.attributes && data.attributes[name || key];
+        },
+        serialize: function (resource, data, key) {
+          data.attributes[name || key] = resource[key];
         }
       };
     }
@@ -131,9 +134,25 @@ export default class Store {
     }
   }
 
-  create(type, data, callback) {
+  convert(resource) {
+    var data = {
+      type: resource.type,
+      id: resource.id,
+      attributes: {},
+      relationships: {}
+    };
+    var definition = this._types[data.type];
+    Object.keys(definition).forEach(fieldName => {
+      if (fieldName[0] !== "_") {
+        definition[fieldName].serialize(resource, data, fieldName);
+      }
+    });
+    return data;
+  }
+
+  create(resource, callback) {
     if (this._adapter) {
-      this._adapter.create(this, type, data, callback);
+      this._adapter.create(this, resource, callback);
     } else {
       throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
     }
@@ -149,19 +168,23 @@ export default class Store {
    */
   define(names, definition) {
     names = (names.constructor === Array) ? names : [ names ];
-    definition._names = names;
-    names.forEach(name => {
-      if (!this._types[name]) {
-        this._types[name] = definition;
-      } else {
-        throw new Error(`The type '${name}' has already been defined.`);
-      }
-    });
+    if (definition) {
+      definition._names = names;
+      names.forEach(name => {
+        if (!this._types[name]) {
+          this._types[name] = definition;
+        } else {
+          throw new Error(`The type '${name}' has already been defined.`);
+        }
+      });
+    } else {
+      throw new Error(`You must provide a definition for the type '${names[0]}'.`);
+    }
   }
 
-  destroy(type, id, callback) {
+  destroy(resource, callback) {
     if (this._adapter) {
-      this._adapter.destroy(this, type, id, callback);
+      this._adapter.destroy(this, resource, callback);
     } else {
       throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
     }
@@ -354,9 +377,9 @@ export default class Store {
     }
   }
 
-  update(type, id, data, callback) {
+  update(resource, callback) {
     if (this._adapter) {
-      this._adapter.update(this, type, id, data, callback);
+      this._adapter.update(this, resource, callback);
     } else {
       throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
     }

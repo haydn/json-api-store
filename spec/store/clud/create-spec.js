@@ -17,7 +17,7 @@ test("create must call the create method prodvided by the adapter", function (t)
   var cb = function () {};
   t.plan(2);
   t.doesNotThrow(function () {
-    store.create("foo", a, cb);
+    store.create(a, cb);
   }, "should not throw an error");
-  t.ok(adatper.create.calledWith(store, "foo", a, cb), "should call adapter with the same params");
+  t.ok(adatper.create.calledWith(store, a, cb), "should call adapter with the same params");
 });
