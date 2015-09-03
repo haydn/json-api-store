@@ -10,7 +10,7 @@ if [ "$TARGET" = "node" ]; then
   exit $?
 fi
 
-if [ "$1" = "--watch" ]; then
+if [ "$1" = "--watch" ] || [ "$1" = "-w" ]; then
   ./node_modules/.bin/chokidar './src/**/*.js' './spec/**/*.js' -c './scripts/test'
 else
   set -o pipefail

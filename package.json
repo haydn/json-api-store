@@ -8,7 +8,6 @@
     "build": "./node_modules/.bin/babel src/store.js -m umd --module-id Store --compact --no-comments -o dist/store.js -s",
     "docs": "./node_modules/.bin/esdoc -c esdoc.json",
     "release": "./scripts/release",
-    "start": "./scripts/test --watch",
     "test": "./scripts/test"
   },
   "author": "Haydn Ewers",
