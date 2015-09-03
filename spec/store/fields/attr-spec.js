@@ -1,4 +1,4 @@
-import test from "tape";
+import test from "tape-catch";
 import Store from "../../../src/store";
 
 test("attr must return the correct type attribute", function (t) {

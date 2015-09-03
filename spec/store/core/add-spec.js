@@ -1,4 +1,4 @@
-import test from "tape";
+import test from "tape-catch";
 import Store from "../../../src/store";
 
 test("add must add a resource to the store", function (t) {

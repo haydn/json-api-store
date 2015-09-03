@@ -1,4 +1,4 @@
-import test from "tape";
+import test from "tape-catch";
 import Store from "../../../src/store";
 
 test("find must, when an id is provided, return an object with 'type' and 'id' properties", function (t) {
