@@ -13,11 +13,14 @@ test("destroy must throw an error if it is called when there isn't an adapter", 
 test("destroy must call the destroy method prodvided by the adapter", function (t) {
   var adatper = { destroy: sinon.spy() };
   var store = new Store(adatper);
-  var a = {};
-  var cb = function () {};
+  var type = "foo";
+  var id = "1";
+  var success = function () {};
+  var error = function () {};
+  var context = {};
   t.plan(2);
   t.doesNotThrow(function () {
-    store.destroy(a, cb);
+    store.destroy(type, id, success, error, context);
   }, "should not throw an error");
-  t.ok(adatper.destroy.calledWith(store, a, cb), "should call adapter with the same params");
+  t.ok(adatper.destroy.calledWith(store, type, id, success, error, context), "should call adapter with the same params");
 });
