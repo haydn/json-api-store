@@ -24,7 +24,7 @@ npm test
 Alternatively, you can run tests in watch mode:
 
 ```
-npm test -- -w
+npm test watch
 ```
 
 ## Generating Documentation
