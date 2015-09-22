@@ -1,4 +1,4 @@
-# JSON API Store [![Build Status](https://travis-ci.org/haydn/json-api-store.svg?branch=master)](https://travis-ci.org/haydn/json-api-store)
+# JSON API Store [![Build Status](https://travis-ci.org/haydn/json-api-store.svg?branch=master)](https://travis-ci.org/haydn/json-api-store) [![NPM Version](https://badge.fury.io/js/json-api-store.svg)](http://badge.fury.io/js/json-api-store)
 
 A lightweight JavaScript library that acts as a data store and uses the
 [JSON API](http://jsonapi.org) specification. You can use it in the browser to
