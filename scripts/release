@@ -79,10 +79,10 @@ cp -R example "$tmpdir/example"
 echo "$ git checkout gh-pages"
 git checkout gh-pages
 # Delete the current dist & example dirs.
-rm -r dist docs example
+rm -r dist example
 # Copy across the new dist, docs & example dirs.
 cp -R "$tmpdir"/dist dist
-cp -R "$tmpdir"/dist "release/v$version"
+cp -R "$tmpdir"/dist "releases/v$version"
 cp -R "$tmpdir"/docs "docs/v$version"
 cp -R "$tmpdir"/example example
 # Clean-up the temp dir.
