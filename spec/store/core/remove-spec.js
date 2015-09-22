@@ -51,6 +51,15 @@ test("remove must throw an error if the type has not been defined", function (t)
   }, /Unknown type 'products'/);
 });
 
+test("remove must not throw an error if the a resource doesn't exist", function (t) {
+  var store = new Store();
+  t.plan(1);
+  store.define("products", {});
+  t.doesNotThrow(function () {
+    store.remove("products", "1");
+  });
+});
+
 test("remove must remove dependant relationships when a resource is removed", function (t) {
   var store = new Store();
   t.plan(3);

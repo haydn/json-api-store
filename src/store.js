@@ -431,7 +431,7 @@ export default class Store {
     if (type) {
       if (this._types[type]) {
         if (id) {
-          let resource = this._data[type][id];
+          let resource = this._data[type] && this._data[type][id];
           if (resource) {
             this._remove(resource);
             if (this._resourceListeners["removed"][type] && this._resourceListeners["removed"][type][id]) {
