@@ -6,7 +6,7 @@
     "Haydn Ewers <haydn@particlesystem.com>"
   ],
   "description": "A lightweight library for using JSON API in the browser.",
-  "main": "dist/store.js",
+  "main": "dist/store.prod.js",
   "moduleType": [
     "amd",
     "globals",
