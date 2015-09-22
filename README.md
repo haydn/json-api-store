@@ -110,9 +110,9 @@ npm i json-api-store
 bower i json-api-store
 ```
 
-#### Manually
+#### Download
 
-Grab the [store.js](https://raw.githubusercontent.com/haydn/json-api-store/master/dist/store.js) file.
+To use directly in the browser you can grab the [store.prod.js](https://raw.githubusercontent.com/haydn/json-api-store/master/dist/store.prod.js) file.
 
 ## Documentation
 
