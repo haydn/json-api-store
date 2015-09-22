@@ -71,19 +71,26 @@ echo "Updating the website..."
 
 tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/release.XXXX")
 
+# Copy dist, docs & example to a temp dir.
 cp -R dist "$tmpdir/dist"
 cp -R docs "$tmpdir/docs"
 cp -R example "$tmpdir/example"
+# Checkout the GitHub pages branch.
 echo "$ git checkout gh-pages"
 git checkout gh-pages
-rm -r example dist/store.js
-cp "$tmpdir"/dist/store.js dist/store.js
-cp "$tmpdir"/dist/store.js "dist/store.v$version.js"
+# Delete the current dist & example dirs.
+rm -r dist docs example
+# Copy across the new dist, docs & example dirs.
+cp -R "$tmpdir"/dist dist
+cp -R "$tmpdir"/dist "release/v$version"
 cp -R "$tmpdir"/docs "docs/v$version"
 cp -R "$tmpdir"/example example
+# Clean-up the temp dir.
 rm -r $tmpdir
+# Fix mentions of the version number.
 sed -i.bak -E "s/v[0-9]+\.[0-9]+\.[0-9]+/v$version/g" index.html
 rm index.html.bak
+# Add, commit & push.
 echo "$ git add ."
 git add .
 echo "$ git commit -a -m \"Release v$version.\""
