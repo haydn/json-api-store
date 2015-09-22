@@ -94,8 +94,93 @@ test("update must call the error callback if an error is raised during the proce
   server.restore();
 });
 
-test.skip("update must handle missing success or error callbacks", function (t) {});
+test("update must handle missing success or error callbacks", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  var callback = sinon.spy();
+  var context = {};
+  t.plan(6);
+  t.timeoutAfter(1000);
+  store.define("products", {
+    title: Store.attr()
+  });
+  store.add({
+    type: "products",
+    id: "1",
+    attributes: {
+      title: "A Book"
+    }
+  })
+  server.respondWith("PATCH", "/products/1", [
+    204,
+    { "Content-Type": "application/vnd.api+json" },
+    JSON.stringify({
+      data: { type: "products", id: "1" }
+    })
+  ]);
+  server.respondWith("POST", "/products/2", [
+    500,
+    { "Content-Type": "application/vnd.api+json" },
+    ""
+  ]);
+  store.update("products", "1", { title: "Something Else" }, null, callback, context);
+  server.respond();
+  t.equal(store.find("products", "1").title, "Something Else");
+  t.equal(callback.callCount, 0);
+  callback.reset();
+  store.update("products", "1", { title: "Name" }, callback, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  callback.reset();
+  store.update("products", "2", {}, null, callback, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  server.restore();
+});
 
-test.skip("update must call callbacks with the context provided", function (t) {});
+test("update must call callbacks with the context provided", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  var callback = sinon.spy();
+  var context = {};
+  t.plan(4);
+  t.timeoutAfter(1000);
+  store.define("products", {
+    title: Store.attr()
+  });
+  store.add({
+    type: "products",
+    id: "1",
+    attributes: {
+      title: "A Book"
+    }
+  })
+  server.respondWith("PATCH", "/products/1", [
+    204,
+    { "Content-Type": "application/vnd.api+json" },
+    JSON.stringify({
+      data: { type: "products", id: "1" }
+    })
+  ]);
+  server.respondWith("POST", "/products/2", [
+    500,
+    { "Content-Type": "application/vnd.api+json" },
+    ""
+  ]);
+  store.update("products", "1", { title: "Something" }, callback, function () {}, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  callback.reset();
+  store.update("products", "2", { title: "Something Else" }, function () {}, callback, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  server.restore();
+});
 
 test.skip("update must throw an error if the type has not been defined", function (t) {});

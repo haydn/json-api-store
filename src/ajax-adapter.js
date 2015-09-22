@@ -139,33 +139,43 @@ export default class AjaxAdapter {
 
   }
 
-  update(store, type, id, partial, success, error) {
+  update(store, type, id, partial, success, error, context) {
 
-    let request = new XMLHttpRequest();
-    let data = store.convert(type, id, partial);
+    if (error && {}.toString.call(error) !== '[object Function]') {
 
-    request.open('PATCH', `${this._base}/${type}/${id}`, true);
+      this.update(store, type, id, partial, success, null, error);
 
-    request.onload = function () {
-      if (request.status >= 200 && request.status < 300) {
-        try {
-          store.add(data);
-          if (success) {
-            success(store.find(data.type, data.id));
+    } else if (store._types[type]) {
+
+      let request = new XMLHttpRequest();
+      let data = store.convert(type, id, partial);
+
+      request.open('PATCH', `${this._base}/${type}/${id}`, true);
+
+      request.onload = function () {
+        if (request.status >= 200 && request.status < 300) {
+          try {
+            store.add(data);
+            if (success) {
+              success.call(context, store.find(data.type, data.id));
+            }
+          } catch (e) {
+            if (error) {
+              error.call(context, e);
+            }
           }
-        } catch (e) {
-          if (error) {
-            error(e);
-          }
+        } else if (error) {
+          error.call(context);
         }
-      } else if (error) {
-        error();
-      }
-    };
+      };
 
-    request.send({
-      data: JSON.stringify(data)
-    });
+      request.send({
+        data: JSON.stringify(data)
+      });
+
+    } else {
+      throw new Error(`Unknown type '${type}'`);
+    }
 
   }
 
