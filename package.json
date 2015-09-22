@@ -5,13 +5,16 @@
   "repository": "haydn/json-api-store",
   "main": "dist/store.js",
   "scripts": {
+    "build": "./scripts/build",
     "test": "node_modules/jasmine/bin/jasmine.js"
   },
   "author": "Haydn Ewers",
   "license": "MIT",
   "devDependencies": {
     "babel": "^5.8.21",
-    "jasmine": "^2.3.2"
+    "exorcist": "^0.4.0",
+    "jasmine": "^2.3.2",
+    "uglifyify": "^3.0.1"
   },
   "dependencies": {
     "array.prototype.find": "^1.0.0"
