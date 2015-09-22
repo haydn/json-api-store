@@ -77,4 +77,88 @@ test("destroy must use the adapter's 'base' config if present", function (t) {
   server.restore();
 });
 
-test.skip("destroy must call callbacks with the context provided");
+test("destroy must call the error callback if an error is raised during the process", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  var callback = sinon.spy();
+  t.plan(1);
+  t.timeoutAfter(1000);
+  server.respondWith("DELETE", "/foo/1", [
+    204,
+    { "Content-Type": "application/vnd.api+json" },
+    ""
+  ]);
+  store.destroy("foo", "1", null, callback);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  server.restore();
+});
+
+test("destroy must handle missing success or error callbacks", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  var callback = sinon.spy();
+  var context = {};
+  t.plan(5);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  server.respondWith("DELETE", "/products/6", [
+    204,
+    { "Content-Type": "application/vnd.api+json" },
+    ""
+  ]);
+  server.respondWith("DELETE", "/products/1", [
+    500,
+    { "Content-Type": "application/vnd.api+json" },
+    ""
+  ]);
+  store.destroy("products", "6", null, callback, context);
+  server.respond();
+  t.equal(callback.callCount, 0);
+  callback.reset();
+  store.destroy("products", "6", callback, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  callback.reset();
+  store.destroy("products", "1", null, callback, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  server.restore();
+});
+
+test("destroy must call callbacks with the context provided", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  var callback = sinon.spy();
+  var context = {};
+  t.plan(4);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  server.respondWith("DELETE", "/products/6", [
+    204,
+    { "Content-Type": "application/vnd.api+json" },
+    ""
+  ]);
+  server.respondWith("DELETE", "/products/1", [
+    500,
+    { "Content-Type": "application/vnd.api+json" },
+    ""
+  ]);
+  store.destroy("products", "6", callback, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  callback.reset();
+  store.destroy("products", "1", null, callback, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  server.restore();
+});
+
+test.skip("destroy must throw an error if the type has not been defined", function (t) {});

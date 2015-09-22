@@ -6,42 +6,74 @@ export default class AjaxAdapter {
 
   create(store, type, partial, success, error, context) {
 
-    let request = new XMLHttpRequest();
+    if (error && {}.toString.call(error) !== '[object Function]') {
 
-    request.open('POST', `${this._base}/${type}`, true);
+      this.create(store, type, partial, success, null, error);
 
-    request.onload = function () {
-      if (request.status >= 200 && request.status < 300) {
-        let response = JSON.parse(request.responseText);
-        store.push(response);
-        success.call(context, store.find(response.data.type, response.data.id));
-      } else {
-        error.call(context);
-      }
-    };
+    } else {
 
-    request.send({
-      data: JSON.stringify(store.convert(type, partial))
-    });
+      let request = new XMLHttpRequest();
+
+      request.open('POST', `${this._base}/${type}`, true);
+
+      request.onload = function () {
+        if (request.status >= 200 && request.status < 300) {
+          let response = JSON.parse(request.responseText);
+          try {
+            store.push(response);
+            if (success) {
+              success.call(context, store.find(response.data.type, response.data.id));
+            }
+          } catch (e) {
+            if (error) {
+              error.call(context, e);
+            }
+          }
+        } else {
+          if (error) {
+            error.call(context);
+          }
+        }
+      };
+
+      request.send({
+        data: JSON.stringify(store.convert(type, partial))
+      });
+
+    }
 
   }
 
   destroy(store, type, id, success, error, context) {
 
-    let request = new XMLHttpRequest();
+    if (error && {}.toString.call(error) !== '[object Function]') {
 
-    request.open('DELETE', `${this._base}/${type}/${id}`, true);
+      this.destroy(store, type, id, success, null, error);
 
-    request.onload = function () {
-      if (request.status >= 200 && request.status < 300) {
-        store.remove(type, id);
-        success.call(context);
-      } else {
-        error.call(context);
-      }
-    };
+    } else {
 
-    request.send();
+      let request = new XMLHttpRequest();
+
+      request.open('DELETE', `${this._base}/${type}/${id}`, true);
+
+      request.onload = function () {
+        if (request.status >= 200 && request.status < 300) {
+          try {
+            store.remove(type, id);
+            if (success) {
+              success.call(context);
+            }
+          } catch (e) {
+            error.call(context, e);
+          }
+        } else if (error) {
+          error.call(context);
+        }
+      };
+
+      request.send();
+
+    }
 
   }
 
@@ -52,7 +84,9 @@ export default class AjaxAdapter {
     } else if (id && typeof id === "object") {
       this.load(store, type, null, id, options, success, error);
     } else if (options && {}.toString.call(options) === '[object Function]') {
-      this.load(store, type, id, null, options, success, error);
+      this.load(store, type, id, {}, options, success, error);
+    } else if (error && {}.toString.call(error) !== '[object Function]') {
+      this.load(store, type, id, options, success, null, error);
     } else {
 
       let request = new XMLHttpRequest();
@@ -65,13 +99,15 @@ export default class AjaxAdapter {
 
       request.onload = function () {
         if (request.status >= 200 && request.status < 300) {
-          store.push(JSON.parse(request.responseText));
-          if (id) {
-            success.call(context, store.find(type, id));
-          } else {
-            success.call(context, store.find(type));
+          try {
+            store.push(JSON.parse(request.responseText));
+            if (success) {
+              success.call(context, id ? store.find(type, id) : store.find(type));
+            }
+          } catch (e) {
+            error.call({}, e);
           }
-        } else {
+        } else if (error) {
           error.call(context);
         }
       };
@@ -82,7 +118,7 @@ export default class AjaxAdapter {
 
   }
 
-  update(store, type, id, partial, success, error, context) {
+  update(store, type, id, partial, success, error) {
 
     let request = new XMLHttpRequest();
     let data = store.convert(type, id, partial);
@@ -91,10 +127,18 @@ export default class AjaxAdapter {
 
     request.onload = function () {
       if (request.status >= 200 && request.status < 300) {
-        store.add(data);
-        success.call(context, store.find(data.type, data.id));
-      } else {
-        error.call(context);
+        try {
+          store.add(data);
+          if (success) {
+            success(store.find(data.type, data.id));
+          }
+        } catch (e) {
+          if (error) {
+            error(e);
+          }
+        }
+      } else if (error) {
+        error();
       }
     };
 

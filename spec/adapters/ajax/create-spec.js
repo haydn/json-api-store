@@ -44,9 +44,7 @@ test("create must handle 500 errors for failed attempts", function (t) {
   server.respondWith("POST", "/products", [
     500,
     { "Content-Type": "application/vnd.api+json" },
-    JSON.stringify({
-      data: { type: "products", id: "9" }
-    })
+    ""
   ]);
   t.equal(store.find("products").length, 0);
   store.create("products", {}, function () {
@@ -58,11 +56,110 @@ test("create must handle 500 errors for failed attempts", function (t) {
   server.restore();
 });
 
-test.skip("create must call the error callback if an undefined type is included");
+test("create must call the error callback if an error is raised during the process", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  var callback = sinon.spy();
+  t.plan(1);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  server.respondWith("POST", "/products", [
+    201,
+    {
+      "Content-Type": "application/vnd.api+json"
+    },
+    JSON.stringify({
+      data: {
+        type: "products",
+        id: "9"
+      },
+      included: [
+        {
+          type: "foo",
+          id: "1"
+        }
+      ]
+    })
+  ]);
+  store.create("products", {}, null, callback);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  server.restore();
+});
 
-test.skip("create must call the error callback if the server responds with a non-2xx code");
+test("create must handle missing success or error callbacks", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  var callback = sinon.spy();
+  var context = {};
+  t.plan(6);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  store.define("categories", {});
+  server.respondWith("POST", "/products", [
+    201,
+    { "Content-Type": "application/vnd.api+json" },
+    JSON.stringify({
+      data: { type: "products", id: "9" }
+    })
+  ]);
+  server.respondWith("POST", "/categories", [
+    500,
+    { "Content-Type": "application/vnd.api+json" },
+    ""
+  ]);
+  store.create("products", {}, null, callback, context);
+  server.respond();
+  t.equal(store.find("products").length, 1);
+  t.equal(callback.callCount, 0);
+  callback.reset();
+  store.create("products", {}, callback, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  callback.reset();
+  store.create("categories", {}, null, callback, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  server.restore();
+});
 
-test.skip("create must call callbacks with the context provided");
+test("create must call callbacks with the context provided", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  var callback = sinon.spy();
+  var context = {};
+  t.plan(4);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  store.define("categories", {});
+  server.respondWith("POST", "/products", [
+    201,
+    { "Content-Type": "application/vnd.api+json" },
+    JSON.stringify({
+      data: { type: "products", id: "9" }
+    })
+  ]);
+  server.respondWith("POST", "/categories", [
+    500,
+    { "Content-Type": "application/vnd.api+json" },
+    ""
+  ]);
+  store.create("products", {}, callback, function () {}, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  callback.reset();
+  store.create("categories", {}, function () {}, callback, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  server.restore();
+});
 
 test("create must use the adapter's 'base' config if present", function (t) {
   var server = sinon.fakeServer.create({ autoRespond: false });
@@ -84,3 +181,5 @@ test("create must use the adapter's 'base' config if present", function (t) {
   server.respond();
   server.restore();
 });
+
+test.skip("create must throw an error if the type has not been defined", function (t) {});

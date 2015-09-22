@@ -171,12 +171,100 @@ test("load must use the adapter's 'base' config if present", function (t) {
   server.restore();
 });
 
-test.skip("load must use pseudonyms"); // store.load('product') OR store.load('products')
+test("load must call the error callback if an error is raised during the process", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  var callback = sinon.spy();
+  t.plan(1);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  server.respondWith("GET", "/products/1", [
+    200,
+    { "Content-Type": "application/vnd.api+json" },
+    JSON.stringify({
+      data: { type: "products", id: "1" },
+      included: [
+        { type: "foo", id: "1" },
+      ]
+    })
+  ]);
+  store.load("products", "1", function () {}, callback);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  server.restore();
+});
 
-test.skip("load must call the error callback if an undefined type is included");
+test("load must handle missing options, success callbacks or error callbacks", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  var callback = sinon.spy();
+  var context = {};
+  t.plan(5);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  server.respondWith("GET", "/products/6", [
+    200,
+    { "Content-Type": "application/vnd.api+json" },
+    JSON.stringify({
+      data: { type: "products", id: "6" }
+    })
+  ]);
+  server.respondWith("GET", "/products/1", [
+    500,
+    { "Content-Type": "application/vnd.api+json" },
+    ""
+  ]);
+  store.load("products", "6", {}, null, callback, context);
+  server.respond();
+  t.equal(callback.callCount, 0);
+  callback.reset();
+  store.load("products", "6", callback, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  callback.reset();
+  store.load("products", "1", {}, null, callback, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  server.restore();
+});
 
-test.skip("load must return a promise if no callbacks are provided");
-
-test.skip("load must call callbacks with the context provided");
+test("load must call callbacks with the context provided", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  var callback = sinon.spy();
+  var context = {};
+  t.plan(4);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  server.respondWith("GET", "/products/6", [
+    200,
+    { "Content-Type": "application/vnd.api+json" },
+    JSON.stringify({
+      data: { type: "products", id: "6" }
+    })
+  ]);
+  server.respondWith("GET", "/products/1", [
+    500,
+    { "Content-Type": "application/vnd.api+json" },
+    ""
+  ]);
+  store.load("products", "6", {}, callback, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  callback.reset();
+  store.load("products", "1", {}, null, callback, context);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  t.equal(callback.firstCall.thisValue, context);
+  server.restore();
+});
 
 test.skip("load must use the options if they're provided");
+
+test.skip("load must throw an error if the type has not been defined", function (t) {});

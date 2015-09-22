@@ -75,4 +75,27 @@ test("update must use the adapter's 'base' config if present", function (t) {
   server.restore();
 });
 
-test.skip("update must call callbacks with the context provided");
+test("update must call the error callback if an error is raised during the process", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  var callback = sinon.spy();
+  t.plan(1);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  server.respondWith("PATCH", "/products/1", [
+    204,
+    { "Content-Type": "application/vnd.api+json" },
+    ""
+  ]);
+  store.update("products", "1", {}, function () { throw new Error(); }, callback);
+  server.respond();
+  t.equal(callback.callCount, 1);
+  server.restore();
+});
+
+test.skip("update must handle missing success or error callbacks", function (t) {});
+
+test.skip("update must call callbacks with the context provided", function (t) {});
+
+test.skip("update must throw an error if the type has not been defined", function (t) {});
