@@ -6,9 +6,15 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 require("array.prototype.find");
+
+var _ajaxAdapter = require("./ajax-adapter");
+
+var _ajaxAdapter2 = _interopRequireDefault(_ajaxAdapter);
 
 var Store = (function () {
   _createClass(Store, null, [{
@@ -32,6 +38,9 @@ var Store = (function () {
           "default": options && options["default"],
           deserialize: function deserialize(data, key) {
             return data.attributes && data.attributes[name || key];
+          },
+          serialize: function serialize(resource, data, key) {
+            data.attributes[name || key] = resource[key];
           }
         };
       }
@@ -107,9 +116,10 @@ var Store = (function () {
     }
   }]);
 
-  function Store() {
+  function Store(adapter) {
     _classCallCheck(this, Store);
 
+    this._adapter = adapter;
     this._collectionListeners = { "added": {}, "updated": {}, "removed": {} };
     this._data = {};
     this._resourceListeners = { "added": {}, "updated": {}, "removed": {} };
@@ -162,6 +172,78 @@ var Store = (function () {
     }
 
     /**
+     * Converts the given partial into a JSON API compliant representation.
+     *
+     * @since 0.5.0
+     * @param {!string} [type] - The type of the resource. This can be omitted if the partial includes a type property.
+     * @param {!string} [id] - The id of the resource. This can be omitted if the partial includes an id property.
+     * @param {!object} partial - The data to convert.
+     * @return {object} - JSON API version of the object.
+     */
+  }, {
+    key: "convert",
+    value: function convert(type, id, partial) {
+      var _this3 = this;
+
+      if (type && typeof type === "object") {
+        return this.convert(type.type, type.id, type);
+      } else if (id && typeof id === "object") {
+        return this.convert(type, id.id, id);
+      } else {
+        var _ret2 = (function () {
+          var data = {
+            type: type,
+            attributes: {},
+            relationships: {}
+          };
+          if (id) {
+            data.id = id;
+          }
+          var definition = _this3._types[data.type];
+          Object.keys(definition).forEach(function (fieldName) {
+            if (fieldName[0] !== "_") {
+              definition[fieldName].serialize(partial, data, fieldName);
+            }
+          });
+          return {
+            v: data
+          };
+        })();
+
+        if (typeof _ret2 === "object") return _ret2.v;
+      }
+    }
+
+    /**
+     * Attempts to create the resource through the adapter and adds it to  the
+     * store if successful.
+     *
+     * @since 0.5.0
+     * @param {!string} type - Type of resource.
+     * @param {!Object} partial - Data to create the resource with.
+     * @param {function} [success] - Callback on success.
+     * @param {function} [error] - Callback on error.
+     * @param {Object} [context] - Context for the callbacks.
+     * @return {undefined} - Nothing.
+     *
+     * @example
+     * let adapter = new Store.AjaxAdapter();
+     * let store = new Store(adpater);
+     * store.create("product", { title: "A Book" }, (product) => {
+     *   console.log(product.title);
+     * });
+     */
+  }, {
+    key: "create",
+    value: function create(type, partial, success, error, context) {
+      if (this._adapter) {
+        this._adapter.create(this, type, partial, success, error, context);
+      } else {
+        throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
+      }
+    }
+
+    /**
      * Defines a type of resource.
      *
      * @since 0.2.0
@@ -172,17 +254,50 @@ var Store = (function () {
   }, {
     key: "define",
     value: function define(names, definition) {
-      var _this3 = this;
+      var _this4 = this;
 
       names = names.constructor === Array ? names : [names];
-      definition._names = names;
-      names.forEach(function (name) {
-        if (!_this3._types[name]) {
-          _this3._types[name] = definition;
-        } else {
-          throw new Error("The type '" + name + "' has already been defined.");
-        }
-      });
+      if (definition) {
+        definition._names = names;
+        names.forEach(function (name) {
+          if (!_this4._types[name]) {
+            _this4._types[name] = definition;
+          } else {
+            throw new Error("The type '" + name + "' has already been defined.");
+          }
+        });
+      } else {
+        throw new Error("You must provide a definition for the type '" + names[0] + "'.");
+      }
+    }
+
+    /**
+     * Attempts to delete the resource through the adapter and removes it from
+     * the store if successful.
+     *
+     * @since 0.5.0
+     * @param {!string} type - Type of resource.
+     * @param {!string} id - ID of resource.
+     * @param {function} [success] - Callback on success.
+     * @param {function} [error] - Callback on error.
+     * @param {Object} [context] - Context for the callbacks.
+     * @return {undefined} - Nothing.
+     *
+     * @example
+     * let adapter = new Store.AjaxAdapter();
+     * let store = new Store(adpater);
+     * store.destroy("product", "1", () => {
+     *   console.log("Destroyed!");
+     * });
+     */
+  }, {
+    key: "destroy",
+    value: function destroy(type, id, success, error, context) {
+      if (this._adapter) {
+        this._adapter.destroy(this, type, id, success, error, context);
+      } else {
+        throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
+      }
     }
 
     /**
@@ -200,40 +315,40 @@ var Store = (function () {
   }, {
     key: "find",
     value: function find(type, id) {
-      var _this4 = this;
+      var _this5 = this;
 
       if (type) {
-        var _ret2 = (function () {
-          var definition = _this4._types[type];
+        var _ret3 = (function () {
+          var definition = _this5._types[type];
           if (definition) {
-            if (!_this4._data[type]) {
+            if (!_this5._data[type]) {
               (function () {
                 var collection = {};
                 definition._names.forEach(function (t) {
-                  return _this4._data[t] = collection;
+                  return _this5._data[t] = collection;
                 });
               })();
             }
             if (id) {
-              if (!_this4._data[type][id]) {
-                _this4._data[type][id] = {
+              if (!_this5._data[type][id]) {
+                _this5._data[type][id] = {
                   _dependents: [],
                   type: type,
                   id: id
                 };
                 Object.keys(definition).forEach(function (key) {
                   if (key[0] !== "_") {
-                    _this4._data[type][id][key] = definition[key]["default"];
+                    _this5._data[type][id][key] = definition[key]["default"];
                   }
                 });
               }
               return {
-                v: _this4._data[type][id]
+                v: _this5._data[type][id]
               };
             } else {
               return {
-                v: Object.keys(_this4._data[type]).map(function (x) {
-                  return _this4._data[type][x];
+                v: Object.keys(_this5._data[type]).map(function (x) {
+                  return _this5._data[type][x];
                 })
               };
             }
@@ -242,9 +357,39 @@ var Store = (function () {
           }
         })();
 
-        if (typeof _ret2 === "object") return _ret2.v;
+        if (typeof _ret3 === "object") return _ret3.v;
       } else {
         throw new TypeError("You must provide a type");
+      }
+    }
+
+    /**
+     * Attempts to load the resource(s) through the adapter and adds it/them to
+     * the store if successful.
+     *
+     * @since 0.5.0
+     * @param {!string} type - Type of resource.
+     * @param {!string} [id] - ID of resource.
+     * @param {Object} [options] - **NOT YET IMPLEMENTED** (this will include sorting, filtering and pagination options)
+     * @param {function} [success] - Callback on success.
+     * @param {function} [error] - Callback on error.
+     * @param {Object} [context] - Context for the callbacks.
+     * @return {undefined} - Nothing.
+     *
+     * @example
+     * let adapter = new Store.AjaxAdapter();
+     * let store = new Store(adpater);
+     * store.load("product", "1", (product) => {
+     *   console.log(product.title);
+     * });
+     */
+  }, {
+    key: "load",
+    value: function load(type, id, options, success, error, context) {
+      if (this._adapter) {
+        this._adapter.load(this, type, id, options, success, error, context);
+      } else {
+        throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
       }
     }
 
@@ -261,7 +406,7 @@ var Store = (function () {
   }, {
     key: "off",
     value: function off(event, type, id, callback) {
-      var _this5 = this;
+      var _this6 = this;
 
       if (this._resourceListeners[event] && this._collectionListeners[event]) {
         if (this._types[type]) {
@@ -271,13 +416,13 @@ var Store = (function () {
             // TODO: Performance-wise, this can be made way better. There shouldn't be a need to maintain separate lists.
             this._types[type]._names.forEach(function (type) {
               if (id) {
-                if (_this5._resourceListeners[event][type] && _this5._resourceListeners[event][type][id]) {
-                  _this5._resourceListeners[event][type][id] = _this5._resourceListeners[event][type][id].filter(function (x) {
+                if (_this6._resourceListeners[event][type] && _this6._resourceListeners[event][type][id]) {
+                  _this6._resourceListeners[event][type][id] = _this6._resourceListeners[event][type][id].filter(function (x) {
                     return x[0] !== callback;
                   });
                 }
-              } else if (_this5._collectionListeners[event][type]) {
-                _this5._collectionListeners[event][type] = _this5._collectionListeners[event][type].filter(function (x) {
+              } else if (_this6._collectionListeners[event][type]) {
+                _this6._collectionListeners[event][type] = _this6._collectionListeners[event][type].filter(function (x) {
                   return x[0] !== callback;
                 });
               }
@@ -305,7 +450,7 @@ var Store = (function () {
   }, {
     key: "on",
     value: function on(event, type, id, callback, context) {
-      var _this6 = this;
+      var _this7 = this;
 
       if (this._resourceListeners[event] && this._collectionListeners[event]) {
         if (this._types[type]) {
@@ -315,19 +460,19 @@ var Store = (function () {
             // TODO: Performance-wise, this can be made way better. There shouldn't be a need to maintain separate lists.
             this._types[type]._names.forEach(function (type) {
               if (id) {
-                _this6._resourceListeners[event][type] = _this6._resourceListeners[event][type] || {};
-                _this6._resourceListeners[event][type][id] = _this6._resourceListeners[event][type][id] || [];
-                if (!_this6._resourceListeners[event][type][id].find(function (x) {
+                _this7._resourceListeners[event][type] = _this7._resourceListeners[event][type] || {};
+                _this7._resourceListeners[event][type][id] = _this7._resourceListeners[event][type][id] || [];
+                if (!_this7._resourceListeners[event][type][id].find(function (x) {
                   return x[0] === callback;
                 })) {
-                  _this6._resourceListeners[event][type][id].push([callback, context]);
+                  _this7._resourceListeners[event][type][id].push([callback, context]);
                 }
               } else {
-                _this6._collectionListeners[event][type] = _this6._collectionListeners[event][type] || [];
-                if (!_this6._collectionListeners[event][type].find(function (x) {
+                _this7._collectionListeners[event][type] = _this7._collectionListeners[event][type] || [];
+                if (!_this7._collectionListeners[event][type].find(function (x) {
                   return x[0] === callback;
                 })) {
-                  _this6._collectionListeners[event][type].push([callback, context]);
+                  _this7._collectionListeners[event][type].push([callback, context]);
                 }
               }
             });
@@ -352,18 +497,18 @@ var Store = (function () {
   }, {
     key: "push",
     value: function push(root) {
-      var _this7 = this;
+      var _this8 = this;
 
       if (root.data.constructor === Array) {
         root.data.forEach(function (x) {
-          return _this7.add(x);
+          return _this8.add(x);
         });
       } else {
         this.add(root.data);
       }
       if (root.included) {
         root.included.forEach(function (x) {
-          return _this7.add(x);
+          return _this8.add(x);
         });
       }
     }
@@ -380,22 +525,22 @@ var Store = (function () {
   }, {
     key: "remove",
     value: function remove(type, id) {
-      var _this8 = this;
+      var _this9 = this;
 
       if (type) {
         if (this._types[type]) {
           if (id) {
             (function () {
-              var resource = _this8._data[type][id];
+              var resource = _this9._data[type] && _this9._data[type][id];
               if (resource) {
-                _this8._remove(resource);
-                if (_this8._resourceListeners["removed"][type] && _this8._resourceListeners["removed"][type][id]) {
-                  _this8._resourceListeners["removed"][type][id].forEach(function (x) {
+                _this9._remove(resource);
+                if (_this9._resourceListeners["removed"][type] && _this9._resourceListeners["removed"][type][id]) {
+                  _this9._resourceListeners["removed"][type][id].forEach(function (x) {
                     return x[0].call(x[1], resource);
                   });
                 }
-                if (_this8._collectionListeners["removed"][type]) {
-                  _this8._collectionListeners["removed"][type].forEach(function (x) {
+                if (_this9._collectionListeners["removed"][type]) {
+                  _this9._collectionListeners["removed"][type].forEach(function (x) {
                     return x[0].call(x[1], resource);
                   });
                 }
@@ -403,7 +548,7 @@ var Store = (function () {
             })();
           } else {
             Object.keys(this._data[type]).forEach(function (id) {
-              return _this8.remove(type, id);
+              return _this9.remove(type, id);
             });
           }
         } else {
@@ -413,10 +558,40 @@ var Store = (function () {
         throw new TypeError("You must provide a type to remove");
       }
     }
+
+    /**
+     * Attempts to update the resource through the adapter and updates it in  the
+     * store if successful.
+     *
+     * @since 0.5.0
+     * @param {!string} type - Type of resource.
+     * @param {!string} id - ID of resource.
+     * @param {!Object} partial - Data to update the resource with.
+     * @param {function} [success] - Callback on success.
+     * @param {function} [error] - Callback on error.
+     * @param {Object} [context] - Context for the callbacks.
+     * @return {undefined} - Nothing.
+     *
+     * @example
+     * let adapter = new Store.AjaxAdapter();
+     * let store = new Store(adpater);
+     * store.update("product", "1", { title: "foo" }, (product) => {
+     *   console.log(product.title);
+     * });
+     */
+  }, {
+    key: "update",
+    value: function update(type, id, partial, success, error, context) {
+      if (this._adapter) {
+        this._adapter.update(this, type, id, partial, success, error, context);
+      } else {
+        throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
+      }
+    }
   }, {
     key: "_addField",
     value: function _addField(object, resource, definition, fieldName) {
-      var _this9 = this;
+      var _this10 = this;
 
       var field = definition[fieldName];
       var newValue = field.deserialize.call(this, object, fieldName);
@@ -431,11 +606,11 @@ var Store = (function () {
         } else if (field.type === "has-many") {
           resource[fieldName].forEach(function (r) {
             if (resource[fieldName].indexOf(r) !== -1) {
-              _this9._removeInverseRelationship(resource, fieldName, r, field);
+              _this10._removeInverseRelationship(resource, fieldName, r, field);
             }
           });
           newValue.forEach(function (r) {
-            _this9._addInverseRelationship(resource, fieldName, r, field);
+            _this10._addInverseRelationship(resource, fieldName, r, field);
           });
         }
         resource[fieldName] = newValue;
@@ -472,11 +647,11 @@ var Store = (function () {
   }, {
     key: "_remove",
     value: function _remove(resource) {
-      var _this10 = this;
+      var _this11 = this;
 
       resource._dependents.forEach(function (dependent) {
-        var dependentResource = _this10._data[dependent.type][dependent.id];
-        switch (_this10._types[dependent.type][dependent.fieldName].type) {
+        var dependentResource = _this11._data[dependent.type][dependent.id];
+        switch (_this11._types[dependent.type][dependent.fieldName].type) {
           case "has-one":
             {
               dependentResource[dependent.fieldName] = null;
@@ -537,4 +712,6 @@ var Store = (function () {
 })();
 
 exports["default"] = Store;
+
+Store.AjaxAdapter = _ajaxAdapter2["default"];
 module.exports = exports["default"];

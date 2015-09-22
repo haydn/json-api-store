@@ -1,5 +1,11 @@
 window.esdocSearchIndex = [
   [
+    "json-api-store/src/ajax-adapter.js~ajaxadapter",
+    "class/src/ajax-adapter.js~AjaxAdapter.html",
+    "<span>AjaxAdapter</span> <span class=\"search-result-import-path\">json-api-store/src/ajax-adapter.js</span>",
+    "class"
+  ],
+  [
     "json-api-store/src/store.js~store",
     "class/src/store.js~Store.html",
     "<span>Store</span> <span class=\"search-result-import-path\">json-api-store/src/store.js</span>",
@@ -330,6 +336,42 @@ window.esdocSearchIndex = [
     "external"
   ],
   [
+    "src/ajax-adapter.js",
+    "file/src/ajax-adapter.js.html",
+    "src/ajax-adapter.js",
+    "file"
+  ],
+  [
+    "src/ajax-adapter.js~ajaxadapter#constructor",
+    "class/src/ajax-adapter.js~AjaxAdapter.html#instance-constructor-constructor",
+    "src/ajax-adapter.js~AjaxAdapter#constructor",
+    "method"
+  ],
+  [
+    "src/ajax-adapter.js~ajaxadapter#create",
+    "class/src/ajax-adapter.js~AjaxAdapter.html#instance-method-create",
+    "src/ajax-adapter.js~AjaxAdapter#create",
+    "method"
+  ],
+  [
+    "src/ajax-adapter.js~ajaxadapter#destroy",
+    "class/src/ajax-adapter.js~AjaxAdapter.html#instance-method-destroy",
+    "src/ajax-adapter.js~AjaxAdapter#destroy",
+    "method"
+  ],
+  [
+    "src/ajax-adapter.js~ajaxadapter#load",
+    "class/src/ajax-adapter.js~AjaxAdapter.html#instance-method-load",
+    "src/ajax-adapter.js~AjaxAdapter#load",
+    "method"
+  ],
+  [
+    "src/ajax-adapter.js~ajaxadapter#update",
+    "class/src/ajax-adapter.js~AjaxAdapter.html#instance-method-update",
+    "src/ajax-adapter.js~AjaxAdapter#update",
+    "method"
+  ],
+  [
     "src/store.js",
     "file/src/store.js.html",
     "src/store.js",
@@ -348,15 +390,39 @@ window.esdocSearchIndex = [
     "method"
   ],
   [
+    "src/store.js~store#convert",
+    "class/src/store.js~Store.html#instance-method-convert",
+    "src/store.js~Store#convert",
+    "method"
+  ],
+  [
+    "src/store.js~store#create",
+    "class/src/store.js~Store.html#instance-method-create",
+    "src/store.js~Store#create",
+    "method"
+  ],
+  [
     "src/store.js~store#define",
     "class/src/store.js~Store.html#instance-method-define",
     "src/store.js~Store#define",
     "method"
   ],
   [
+    "src/store.js~store#destroy",
+    "class/src/store.js~Store.html#instance-method-destroy",
+    "src/store.js~Store#destroy",
+    "method"
+  ],
+  [
     "src/store.js~store#find",
     "class/src/store.js~Store.html#instance-method-find",
     "src/store.js~Store#find",
+    "method"
+  ],
+  [
+    "src/store.js~store#load",
+    "class/src/store.js~Store.html#instance-method-load",
+    "src/store.js~Store#load",
     "method"
   ],
   [
@@ -381,6 +447,12 @@ window.esdocSearchIndex = [
     "src/store.js~store#remove",
     "class/src/store.js~Store.html#instance-method-remove",
     "src/store.js~Store#remove",
+    "method"
+  ],
+  [
+    "src/store.js~store#update",
+    "class/src/store.js~Store.html#instance-method-update",
+    "src/store.js~Store#update",
     "method"
   ],
   [

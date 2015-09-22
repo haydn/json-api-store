@@ -17,7 +17,7 @@
   <a href="identifiers.html">Identifier</a>
   <a href="source.html">Source</a>
   
-  
+  <a data-ice="repoURL" href="https://github.com/haydn/json-api-store" class="repo-url-github">Repository</a>
   <div class="search-box">
   <span>
     <img src="./image/search.png">
@@ -31,7 +31,8 @@
   <h2>Class</h2>
   <ul>
     
-  <li data-ice="classDoc"><span><a href="class/src/store.js~Store.html">Store</a></span></li>
+  <li data-ice="classDoc"><span><a href="class/src/ajax-adapter.js~AjaxAdapter.html">AjaxAdapter</a></span></li>
+<li data-ice="classDoc"><span><a href="class/src/store.js~Store.html">Store</a></span></li>
 </ul>
 </div>
 
@@ -46,18 +47,17 @@
 
 </nav>
 
-<div class="content" data-ice="content"><div data-ice="index"><h1 id="json-api-store-build-status-https-travis-ci-org-haydn-json-api-store-svg-branch-master-https-travis-ci-org-haydn-json-api-store-">JSON API Store <a href="https://travis-ci.org/haydn/json-api-store"><img src="https://travis-ci.org/haydn/json-api-store.svg?branch=master" alt="Build Status"></a></h1>
-<p>JSON API Store takes <a href="http://jsonapi.org">JSON API</a> data and creates plain
-JavaScript objects for the resources it describes. It will link-up
-relationships automatically and update both sides of reciprocal relationships
-when either side is modified.</p>
+<div class="content" data-ice="content"><div data-ice="index" class="github-markdown"><h1 id="json-api-store-build-status-https-travis-ci-org-haydn-json-api-store-svg-branch-master-https-travis-ci-org-haydn-json-api-store-">JSON API Store <a href="https://travis-ci.org/haydn/json-api-store"><img src="https://travis-ci.org/haydn/json-api-store.svg?branch=master" alt="Build Status"></a></h1>
+<p>A lightweight JavaScript library that acts as a data store and uses the
+<a href="http://jsonapi.org">JSON API</a> specification. You can use it in the browser to
+easily communicate with a JSON API compliant server.</p>
 <h2 id="usage">Usage</h2>
-<p>At the moment you need to do your own AJAX requests, but there are plans to add
-AJAX methods to create, read, update and destroy resources in the future. For
-now you can just push the responses from your own requests to the store:</p>
-<pre><code class="lang-javascript"><pre class="source-code"><code class="prettyprint">
+<h3 id="browser">Browser</h3>
+<p>At the moment the primary use can for JSON API Store is in the browser:</p>
+<pre><code class="lang-javascript"><code class="source-code prettyprint">
 // Create a new store instance.
-var store = new Store();
+var adapter = new Store.AjaxAdapter({ base: &quot;http://example.com/api/v1&quot; });
+var store = new Store(adapter);
 
 // Define the &quot;categories&quot; type.
 store.define([ &quot;categories&quot;, &quot;category&quot; ], {
@@ -71,54 +71,81 @@ store.define([ &quot;products&quot;, &quot;product&quot; ], {
   category: Store.hasOne()
 });
 
-// Add data - this can just be the response from a GET request to your API.
-store.push({
-  &quot;data&quot;: {
-    &quot;type&quot;: &quot;products&quot;,
-    &quot;id&quot;: &quot;1&quot;,
-    &quot;attributes&quot;: {
-      &quot;title&quot;: &quot;Example Book&quot;
-    },
-    &quot;relationships&quot;: {
-      &quot;category&quot;: {
-        &quot;data&quot;: {
-          &quot;type&quot;: &quot;categories&quot;,
-          &quot;id&quot;: &quot;1&quot;
-        }
-      }
-    }
-  },
-  &quot;included&quot;: [
-    {
-      &quot;type&quot;: &quot;categories&quot;,
-      &quot;id&quot;: &quot;1&quot;,
-      &quot;attributes&quot;: {
-        &quot;title&quot;: &quot;Books&quot;
-      }
-    }
-  ]
+// Load all the products.
+store.load(&quot;products&quot;, { include: [ &quot;category&quot; ] }, function (products) {
+
+  products.length; // 1
+  products[0].id; // &quot;1&quot;
+  products[0].title; // &quot;Example Book&quot;
+  products[0].category.id; // &quot;1&quot;
+  products[0].category.title; // &quot;Books&quot;
+
+  products[0] === store.find(&quot;products&quot;, &quot;1&quot;); // true
+  products[0].category === store.find(&quot;categories&quot;, &quot;1&quot;); // true
+
+});</code>
+</code></pre>
+<h3 id="node">Node</h3>
+<p>You can also use JSON API Store in a Node.js environment (adapters that work in
+a Node.js are in the works):</p>
+<p><strong>NOTE</strong>: Without an adapter the <code>create</code>, <code>load</code>, <code>update</code> and <code>destroy</code>
+methods cannot be used.</p>
+<pre><code class="lang-javascript"><code class="source-code prettyprint">
+var Store = require(&quot;json-api-store&quot;);
+
+var store = new Store();
+
+store.define([ &quot;categories&quot;, &quot;category&quot; ], {
+  title: Store.attr(),
+  products: Store.hasMany()
 });
 
-store.find(&quot;products&quot;, &quot;1&quot;).title; // &quot;Example Book&quot;
-store.find(&quot;categories&quot;, &quot;1&quot;).title; // &quot;Books&quot;
+store.define([ &quot;products&quot;, &quot;product&quot; ], {
+  title: Store.attr(),
+  category: Store.hasOne()
+});
 
-store.find(&quot;products&quot;, &quot;1&quot;).category === store.find(&quot;categories&quot;, &quot;1&quot;); // true
-store.find(&quot;categories&quot;, &quot;1&quot;).products[0] === store.find(&quot;products&quot;, &quot;1&quot;); // true</code></pre>
+store.add({
+  type: &quot;products&quot;,
+  id: &quot;1&quot;,
+  attributes: {
+    title: &quot;Example Product&quot;
+  },
+  relationships: {
+    category: {
+      data: {
+        type: &quot;categories&quot;,
+        id: &quot;1&quot;
+      }
+    }
+  }
+});
+
+store.add({
+  type: &quot;categories&quot;,
+  id: &quot;1&quot;,
+  attributes: {
+    title: &quot;Example Category&quot;
+  }
+});
+
+store.find(&quot;products&quot;, &quot;1&quot;).category.title; // &quot;Example Category&quot;</code>
 </code></pre>
 <h2 id="installing">Installing</h2>
 <h4 id="npm">NPM</h4>
-<pre><code><pre class="source-code"><code class="prettyprint">npm i json-api-store</code></pre>
+<pre><code><code class="source-code prettyprint">npm i json-api-store</code>
 </code></pre><h4 id="bower">Bower</h4>
-<pre><code><pre class="source-code"><code class="prettyprint">bower i json-api-store</code></pre>
+<pre><code><code class="source-code prettyprint">bower i json-api-store</code>
 </code></pre><h4 id="manually">Manually</h4>
 <p>Grab the <a href="https://raw.githubusercontent.com/haydn/json-api-store/master/dist/store.js">store.js</a> file.</p>
 <h2 id="documentation">Documentation</h2>
-<p>Documentation is available in the <code>docs</code> directory. Online documentation is coming soon.</p>
+<p>Documentation is available on the website:</p>
+<p><a href="http://particlesystem.com/json-api-store/">http://particlesystem.com/json-api-store/</a></p>
 </div>
 </div>
 
 <footer class="footer">
-  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.2.1)</span></a>
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.2.2)</span></a>
 </footer>
 
 <script src="script/search_index.js"></script>

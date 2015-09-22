@@ -17,7 +17,7 @@
   <a href="identifiers.html">Identifier</a>
   <a href="source.html">Source</a>
   
-  
+  <a data-ice="repoURL" href="https://github.com/haydn/json-api-store" class="repo-url-github">Repository</a>
   <div class="search-box">
   <span>
     <img src="./image/search.png">
@@ -31,7 +31,8 @@
   <h2>Class</h2>
   <ul>
     
-  <li data-ice="classDoc"><span><a href="class/src/store.js~Store.html">Store</a></span></li>
+  <li data-ice="classDoc"><span><a href="class/src/ajax-adapter.js~AjaxAdapter.html">AjaxAdapter</a></span></li>
+<li data-ice="classDoc"><span><a href="class/src/store.js~Store.html">Store</a></span></li>
 </ul>
 </div>
 
@@ -47,7 +48,8 @@
 </nav>
 
 <div class="content" data-ice="content"><h1 data-ice="title">src/store.js</h1>
-<pre class="source-code line-number"><code class="prettyprint linenums" data-ice="content">import &quot;array.prototype.find&quot;;
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">import &quot;array.prototype.find&quot;;
+import AjaxAdapter from &quot;./ajax-adapter&quot;;
 
 export default class Store {
 
@@ -69,6 +71,9 @@ export default class Store {
         default: options &amp;&amp; options.default,
         deserialize: function (data, key) {
           return data.attributes &amp;&amp; data.attributes[name || key];
+        },
+        serialize: function (resource, data, key) {
+          data.attributes[name || key] = resource[key];
         }
       };
     }
@@ -137,7 +142,8 @@ export default class Store {
     }
   }
 
-  constructor() {
+  constructor(adapter) {
+    this._adapter = adapter;
     this._collectionListeners = { &quot;added&quot;: {}, &quot;updated&quot;: {}, &quot;removed&quot;: {} };
     this._data = {};
     this._resourceListeners = { &quot;added&quot;: {}, &quot;updated&quot;: {}, &quot;removed&quot;: {} };
@@ -179,6 +185,66 @@ export default class Store {
   }
 
   /**
+   * Converts the given partial into a JSON API compliant representation.
+   *
+   * @since 0.5.0
+   * @param {!string} [type] - The type of the resource. This can be omitted if the partial includes a type property.
+   * @param {!string} [id] - The id of the resource. This can be omitted if the partial includes an id property.
+   * @param {!object} partial - The data to convert.
+   * @return {object} - JSON API version of the object.
+   */
+  convert(type, id, partial) {
+    if (type &amp;&amp; typeof type === &quot;object&quot;) {
+      return this.convert(type.type, type.id, type);
+    } else if (id &amp;&amp; typeof id === &quot;object&quot;) {
+      return this.convert(type, id.id, id);
+    } else {
+      let data = {
+        type: type,
+        attributes: {},
+        relationships: {}
+      };
+      if (id) {
+        data.id = id;
+      }
+      let definition = this._types[data.type];
+      Object.keys(definition).forEach(fieldName =&gt; {
+        if (fieldName[0] !== &quot;_&quot;) {
+          definition[fieldName].serialize(partial, data, fieldName);
+        }
+      });
+      return data;
+    }
+  }
+
+  /**
+   * Attempts to create the resource through the adapter and adds it to  the
+   * store if successful.
+   *
+   * @since 0.5.0
+   * @param {!string} type - Type of resource.
+   * @param {!Object} partial - Data to create the resource with.
+   * @param {function} [success] - Callback on success.
+   * @param {function} [error] - Callback on error.
+   * @param {Object} [context] - Context for the callbacks.
+   * @return {undefined} - Nothing.
+   *
+   * @example
+   * let adapter = new Store.AjaxAdapter();
+   * let store = new Store(adpater);
+   * store.create(&quot;product&quot;, { title: &quot;A Book&quot; }, (product) =&gt; {
+   *   console.log(product.title);
+   * });
+   */
+  create(type, partial, success, error, context) {
+    if (this._adapter) {
+      this._adapter.create(this, type, partial, success, error, context);
+    } else {
+      throw new Error(&quot;Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`&quot;);
+    }
+  }
+
+  /**
    * Defines a type of resource.
    *
    * @since 0.2.0
@@ -188,14 +254,45 @@ export default class Store {
    */
   define(names, definition) {
     names = (names.constructor === Array) ? names : [ names ];
-    definition._names = names;
-    names.forEach(name =&gt; {
-      if (!this._types[name]) {
-        this._types[name] = definition;
-      } else {
-        throw new Error(`The type &apos;${name}&apos; has already been defined.`);
-      }
-    });
+    if (definition) {
+      definition._names = names;
+      names.forEach(name =&gt; {
+        if (!this._types[name]) {
+          this._types[name] = definition;
+        } else {
+          throw new Error(`The type &apos;${name}&apos; has already been defined.`);
+        }
+      });
+    } else {
+      throw new Error(`You must provide a definition for the type &apos;${names[0]}&apos;.`);
+    }
+  }
+
+  /**
+   * Attempts to delete the resource through the adapter and removes it from
+   * the store if successful.
+   *
+   * @since 0.5.0
+   * @param {!string} type - Type of resource.
+   * @param {!string} id - ID of resource.
+   * @param {function} [success] - Callback on success.
+   * @param {function} [error] - Callback on error.
+   * @param {Object} [context] - Context for the callbacks.
+   * @return {undefined} - Nothing.
+   *
+   * @example
+   * let adapter = new Store.AjaxAdapter();
+   * let store = new Store(adpater);
+   * store.destroy(&quot;product&quot;, &quot;1&quot;, () =&gt; {
+   *   console.log(&quot;Destroyed!&quot;);
+   * });
+   */
+  destroy(type, id, success, error, context) {
+    if (this._adapter) {
+      this._adapter.destroy(this, type, id, success, error, context);
+    } else {
+      throw new Error(&quot;Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`&quot;);
+    }
   }
 
   /**
@@ -240,6 +337,34 @@ export default class Store {
       }
     } else {
       throw new TypeError(`You must provide a type`);
+    }
+  }
+
+  /**
+   * Attempts to load the resource(s) through the adapter and adds it/them to
+   * the store if successful.
+   *
+   * @since 0.5.0
+   * @param {!string} type - Type of resource.
+   * @param {!string} [id] - ID of resource.
+   * @param {Object} [options] - **NOT YET IMPLEMENTED** (this will include sorting, filtering and pagination options)
+   * @param {function} [success] - Callback on success.
+   * @param {function} [error] - Callback on error.
+   * @param {Object} [context] - Context for the callbacks.
+   * @return {undefined} - Nothing.
+   *
+   * @example
+   * let adapter = new Store.AjaxAdapter();
+   * let store = new Store(adpater);
+   * store.load(&quot;product&quot;, &quot;1&quot;, (product) =&gt; {
+   *   console.log(product.title);
+   * });
+   */
+  load(type, id, options, success, error, context) {
+    if (this._adapter) {
+      this._adapter.load(this, type, id, options, success, error, context);
+    } else {
+      throw new Error(&quot;Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`&quot;);
     }
   }
 
@@ -356,7 +481,7 @@ export default class Store {
     if (type) {
       if (this._types[type]) {
         if (id) {
-          let resource = this._data[type][id];
+          let resource = this._data[type] &amp;&amp; this._data[type][id];
           if (resource) {
             this._remove(resource);
             if (this._resourceListeners[&quot;removed&quot;][type] &amp;&amp; this._resourceListeners[&quot;removed&quot;][type][id]) {
@@ -374,6 +499,34 @@ export default class Store {
       }
     } else {
       throw new TypeError(`You must provide a type to remove`);
+    }
+  }
+
+  /**
+   * Attempts to update the resource through the adapter and updates it in  the
+   * store if successful.
+   *
+   * @since 0.5.0
+   * @param {!string} type - Type of resource.
+   * @param {!string} id - ID of resource.
+   * @param {!Object} partial - Data to update the resource with.
+   * @param {function} [success] - Callback on success.
+   * @param {function} [error] - Callback on error.
+   * @param {Object} [context] - Context for the callbacks.
+   * @return {undefined} - Nothing.
+   *
+   * @example
+   * let adapter = new Store.AjaxAdapter();
+   * let store = new Store(adpater);
+   * store.update(&quot;product&quot;, &quot;1&quot;, { title: &quot;foo&quot; }, (product) =&gt; {
+   *   console.log(product.title);
+   * });
+   */
+  update(type, id, partial, success, error, context) {
+    if (this._adapter) {
+      this._adapter.update(this, type, id, partial, success, error, context);
+    } else {
+      throw new Error(&quot;Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`&quot;);
     }
   }
 
@@ -483,11 +636,13 @@ export default class Store {
   }
 
 }
+
+Store.AjaxAdapter = AjaxAdapter;
 </code></pre>
 </div>
 
 <footer class="footer">
-  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.2.1)</span></a>
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.2.2)</span></a>
 </footer>
 
 <script src="script/search_index.js"></script>
