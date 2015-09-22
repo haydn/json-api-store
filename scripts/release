@@ -16,8 +16,8 @@ git pull
 echo "$ npm install"
 npm install
 
-echo "$ npm test"
-npm test
+echo "$ npm test node && npm test browser"
+npm test node && npm test browser
 
 if [ $? -ne 0 ]; then
   echo >&2 "Looks like there are failing tests. Make sure all tests pass and run this script again."
