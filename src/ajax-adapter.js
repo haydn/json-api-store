@@ -10,7 +10,7 @@ export default class AjaxAdapter {
 
       this.create(store, type, partial, success, null, error);
 
-    } else {
+    } else if (store._types[type]) {
 
       let request = new XMLHttpRequest();
 
@@ -40,6 +40,8 @@ export default class AjaxAdapter {
         data: JSON.stringify(store.convert(type, partial))
       });
 
+    } else {
+      throw new Error(`Unknown type '${type}'`);
     }
 
   }
@@ -50,7 +52,7 @@ export default class AjaxAdapter {
 
       this.destroy(store, type, id, success, null, error);
 
-    } else {
+    } else if (store._types[type]) {
 
       let request = new XMLHttpRequest();
 
@@ -73,6 +75,8 @@ export default class AjaxAdapter {
 
       request.send();
 
+    } else {
+      throw new Error(`Unknown type '${type}'`);
     }
 
   }
@@ -87,7 +91,7 @@ export default class AjaxAdapter {
       this.load(store, type, id, {}, options, success, error);
     } else if (error && {}.toString.call(error) !== '[object Function]') {
       this.load(store, type, id, options, success, null, error);
-    } else {
+    } else if (store._types[type]) {
 
       let request = new XMLHttpRequest();
       let url;
@@ -135,6 +139,8 @@ export default class AjaxAdapter {
 
       request.send();
 
+    } else {
+      throw new Error(`Unknown type '${type}'`);
     }
 
   }

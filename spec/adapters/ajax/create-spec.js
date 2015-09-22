@@ -182,4 +182,11 @@ test("create must use the adapter's 'base' config if present", function (t) {
   server.restore();
 });
 
-test.skip("create must throw an error if the type has not been defined", function (t) {});
+test("create must throw an error if the type has not been defined", function (t) {
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  t.plan(1);
+  t.throws(function () {
+    store.create("products", {});
+  }, /Unknown type 'products'/);
+});

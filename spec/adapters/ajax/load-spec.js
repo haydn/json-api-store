@@ -297,4 +297,11 @@ test("load must use the options if they're provided", function (t) {
   server.restore();
 });
 
-test.skip("load must throw an error if the type has not been defined", function (t) {});
+test("load must throw an error if the type has not been defined", function (t) {
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  t.plan(1);
+  t.throws(function () {
+    store.load("products", "1");
+  }, /Unknown type 'products'/);
+});

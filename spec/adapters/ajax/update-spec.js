@@ -183,4 +183,11 @@ test("update must call callbacks with the context provided", function (t) {
   server.restore();
 });
 
-test.skip("update must throw an error if the type has not been defined", function (t) {});
+test("update must throw an error if the type has not been defined", function (t) {
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  t.plan(1);
+  t.throws(function () {
+    store.update("products", "1", {});
+  }, /Unknown type 'products'/);
+});

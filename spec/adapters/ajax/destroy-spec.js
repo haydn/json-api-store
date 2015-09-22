@@ -84,12 +84,15 @@ test("destroy must call the error callback if an error is raised during the proc
   var callback = sinon.spy();
   t.plan(1);
   t.timeoutAfter(1000);
+  store.define("products", {});
   server.respondWith("DELETE", "/foo/1", [
     204,
     { "Content-Type": "application/vnd.api+json" },
     ""
   ]);
-  store.destroy("foo", "1", null, callback);
+  store.destroy("products", "1", function () {
+    throw new Error();
+  }, callback);
   server.respond();
   t.equal(callback.callCount, 1);
   server.restore();
@@ -161,4 +164,11 @@ test("destroy must call callbacks with the context provided", function (t) {
   server.restore();
 });
 
-test.skip("destroy must throw an error if the type has not been defined", function (t) {});
+test("destroy must throw an error if the type has not been defined", function (t) {
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  t.plan(1);
+  t.throws(function () {
+    store.destroy("products", "1");
+  }, /Unknown type 'products'/);
+});
