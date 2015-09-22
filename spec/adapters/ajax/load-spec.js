@@ -265,6 +265,36 @@ test("load must call callbacks with the context provided", function (t) {
   server.restore();
 });
 
-test.skip("load must use the options if they're provided");
+test("load must use the options if they're provided", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  t.plan(1);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  server.respondWith("GET", "/products?fields[products]=title%2Cdescription&filter=foo&include=author%2Ccomments.user&page=1&sort=age%2Cname%2C-created", [
+    200,
+    { "Content-Type": "application/vnd.api+json" },
+    JSON.stringify({
+      data: [],
+      included: []
+    })
+  ]);
+  store.load("products", {
+    include: "author,comments.user",
+    fields: {
+      products: "title,description"
+    },
+    sort: "age,name,-created",
+    page: 1,
+    filter: "foo"
+  }, function (products) {
+    t.pass("returns a successful response");
+  }, function (error) {
+    t.fail(error);
+  });
+  server.respond();
+  server.restore();
+});
 
 test.skip("load must throw an error if the type has not been defined", function (t) {});

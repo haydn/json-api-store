@@ -95,6 +95,27 @@ export default class AjaxAdapter {
       options = options || {};
       url = id ? `${this._base}/${type}/${id}` : `${this._base}/${type}`;
 
+      if (options) {
+
+        let params = [];
+
+        if (options.fields) {
+          Object.keys(options.fields).forEach(field => {
+            options[`fields[${field}]`] = options.fields[field];
+          });
+          delete options.fields;
+        }
+
+        params = Object.keys(options).map(key => {
+          return key + "=" + encodeURIComponent(options[key]);
+        }).sort();
+
+        if (params.length) {
+          url = `${url}?${params.join("&")}`;
+        }
+
+      }
+
       request.open('GET', url, true);
 
       request.onload = function () {
