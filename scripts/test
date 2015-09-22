@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+## Travis CI
+
+if [ "$TARGET" = "browser" ]
+then
+  ./node_modules/.bin/browserify spec/client.js -t babelify | node_modules/.bin/tape-run
+  exit $?
+elif [ "$TARGET" = "node" ]
+then
+  ./node_modules/.bin/babel-node spec/server.js
+  exit $?
+fi
+
+## Development
+
+if [ "$2" = "watch" ]
+then
+  ./node_modules/.bin/chokidar './src/**/*.js' './spec/**/*.js' -c "./scripts/test $1"
+  exit 0
+else
+  if [ "$1" = "browser" ]
+  then
+    set -o pipefail
+    echo "== TESTING IN BROWSER =="
+    ./node_modules/.bin/browserify spec/client.js -d -t babelify | node_modules/.bin/tape-run | node_modules/.bin/faucet
+    exit $?
+  elif [ "$1" = "node" ]
+  then
+    set -o pipefail
+    echo "== TESTING IN NODE =="
+    ./node_modules/.bin/babel-node spec/server.js | node_modules/.bin/faucet
+    exit $?
+  else
+    echo "Target not specified. Usage examples:"
+    echo "  npm test node"
+    echo "  npm test browser watch"
+    exit 0
+  fi
+fi
