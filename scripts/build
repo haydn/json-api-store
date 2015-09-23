@@ -2,7 +2,7 @@
 
 # Node
 ./node_modules/.bin/babel src/store.js -m common --module-id Store -o dist/store.js
-# ./node_modules/.bin/babel src/ajax-adapter.js -m common --module-id AjaxAdapter -o dist/ajax-adapter.js
+./node_modules/.bin/babel src/ajax-adapter.js -m common --module-id AjaxAdapter -o dist/ajax-adapter.js
 
 # Browser (Development)
 ./node_modules/.bin/browserify src/store.js -d -s Store -t babelify | ./node_modules/.bin/exorcist dist/store.dev.js.map -b dist > dist/store.dev.js
