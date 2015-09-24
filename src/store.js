@@ -1,4 +1,5 @@
 import "array.prototype.find";
+import Rx from "rx-lite";
 import AjaxAdapter from "./ajax-adapter";
 
 export default class Store {
@@ -93,11 +94,15 @@ export default class Store {
   }
 
   constructor(adapter) {
+
     this._adapter = adapter;
-    this._collectionListeners = { "added": {}, "updated": {}, "removed": {} };
     this._data = {};
-    this._resourceListeners = { "added": {}, "updated": {}, "removed": {} };
+    this._subject = new Rx.Subject();
+    this._subscriptions = {};
     this._types = {};
+
+    this.observable = this._subject.asObservable();
+
   }
 
   /**
@@ -120,12 +125,12 @@ export default class Store {
             this._addField(object, resource, definition, fieldName);
           }
         });
-        if (this._resourceListeners[event][object.type] && this._resourceListeners[event][object.type][object.id]) {
-           this._resourceListeners[event][object.type][object.id].forEach(x => x[0].call(x[1], resource));
-        }
-        if (this._collectionListeners[event][object.type]) {
-          this._collectionListeners[event][object.type].forEach(x => x[0].call(x[1], resource));
-        }
+        this._subject.onNext({
+          event: event,
+          type: object.type,
+          id: object.id,
+          value: resource
+        });
       } else {
         throw new TypeError(`The data must have a type and id`);
       }
@@ -329,25 +334,13 @@ export default class Store {
    * @return {undefined} - Nothing.
    */
   off(event, type, id, callback) {
-    if (this._resourceListeners[event] && this._collectionListeners[event]) {
+    if (event === "added" || event === "updated" || event === "removed") {
       if (this._types[type]) {
         if (id && ({}).toString.call(id) === '[object Function]') {
           this.off.call(this, event, type, null, id, callback);
-        } else {
-          // TODO: Performance-wise, this can be made way better. There shouldn't be a need to maintain separate lists.
-          this._types[type]._names.forEach(type => {
-            if (id) {
-              if (this._resourceListeners[event][type] && this._resourceListeners[event][type][id]) {
-                this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id].filter(x => {
-                  return x[0] !== callback;
-                });
-              }
-            } else if (this._collectionListeners[event][type]) {
-              this._collectionListeners[event][type] = this._collectionListeners[event][type].filter(x => {
-                return x[0] !== callback;
-              });
-            }
-          });
+        } else if (this._subscriptions[event] && this._subscriptions[event][type] && this._subscriptions[event][type][id || "*"]) {
+          this._subscriptions[event][type][id || "*"].dispose();
+          delete this._subscriptions[event][type][id || "*"];
         }
       } else {
         throw new Error(`Unknown type '${type}'`);
@@ -369,26 +362,25 @@ export default class Store {
    * @return {undefined} - Nothing.
    */
   on(event, type, id, callback, context) {
-    if (this._resourceListeners[event] && this._collectionListeners[event]) {
+    if (event === "added" || event === "updated" || event === "removed") {
       if (this._types[type]) {
         if (id && ({}).toString.call(id) === '[object Function]') {
           this.on.call(this, event, type, null, id, callback);
-        } else {
-          // TODO: Performance-wise, this can be made way better. There shouldn't be a need to maintain separate lists.
-          this._types[type]._names.forEach(type => {
-            if (id) {
-              this._resourceListeners[event][type] = this._resourceListeners[event][type] || {};
-              this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id] || [];
-              if (!this._resourceListeners[event][type][id].find(x => x[0] === callback)) {
-                this._resourceListeners[event][type][id].push([ callback, context ]);
-              }
-            } else {
-              this._collectionListeners[event][type] = this._collectionListeners[event][type] || [];
-              if (!this._collectionListeners[event][type].find(x => x[0] === callback)) {
-                this._collectionListeners[event][type].push([ callback, context ]);
-              }
-            }
-          });
+        } else if (!this._subscriptions[event] || !this._subscriptions[event][type] || !this._subscriptions[event][type][id || "*"]) {
+          let subscription = this._subject.filter(e => e.event === event);
+          subscription = subscription.filter(e => this._types[type]._names.indexOf(e.type) !== -1);
+          if (id) {
+            subscription = subscription.filter(e => e.id === id);
+          }
+          subscription = subscription.map(e => this.find(e.type, e.id));
+          this._subscriptions[event] = this._subscriptions[event] || {};
+          if (!this._subscriptions[event][type]) {
+            let obj = {};
+            this._types[type]._names.forEach(type => {
+              this._subscriptions[event][type] = obj;
+            });
+          }
+          this._subscriptions[event][type][id || "*"] = subscription.subscribe(callback.bind(context));
         }
       } else {
         throw new Error(`Unknown type '${type}'`);
@@ -434,12 +426,12 @@ export default class Store {
           let resource = this._data[type] && this._data[type][id];
           if (resource) {
             this._remove(resource);
-            if (this._resourceListeners["removed"][type] && this._resourceListeners["removed"][type][id]) {
-               this._resourceListeners["removed"][type][id].forEach(x => x[0].call(x[1], resource));
-            }
-            if (this._collectionListeners["removed"][type]) {
-              this._collectionListeners["removed"][type].forEach(x => x[0].call(x[1], resource));
-            }
+            this._subject.onNext({
+              event: "removed",
+              type: type,
+              id: id,
+              value: null
+            });
           }
         } else {
           Object.keys(this._data[type]).forEach(id => this.remove(type, id));

@@ -8,6 +8,7 @@ import "./store/core/define-spec";
 import "./store/core/find-spec";
 import "./store/core/push-spec";
 import "./store/core/remove-spec";
+import "./store/events/observable-spec";
 import "./store/events/off-spec";
 import "./store/events/on-spec";
 import "./store/fields/attr-spec";
