@@ -13,10 +13,10 @@ test("observable must fire an added event when a resource is added to the store"
     "id": "1"
   });
   t.equal(listener.callCount, 1);
-  t.equal(listener.firstCall.args[0].event, "added");
+  t.equal(listener.firstCall.args[0].name, "added");
   t.equal(listener.firstCall.args[0].type, "products");
   t.equal(listener.firstCall.args[0].id, "1");
-  t.equal(listener.firstCall.args[0].value, store.find("products", "1"));
+  t.equal(listener.firstCall.args[0].resource, store.find("products", "1"));
 });
 
 test("observable must fire an updated event when a resource is update in the store", function (t) {
@@ -42,10 +42,10 @@ test("observable must fire an updated event when a resource is update in the sto
     }
   });
   t.equal(listener.callCount, 1);
-  t.equal(listener.firstCall.args[0].event, "updated");
+  t.equal(listener.firstCall.args[0].name, "updated");
   t.equal(listener.firstCall.args[0].type, "products");
   t.equal(listener.firstCall.args[0].id, "1");
-  t.equal(listener.firstCall.args[0].value, store.find("products", "1"));
+  t.equal(listener.firstCall.args[0].resource, store.find("products", "1"));
 });
 
 test("observable must fire a removed event when a resource is removed from the store", function (t) {
@@ -65,8 +65,8 @@ test("observable must fire a removed event when a resource is removed from the s
   store.observable.subscribe(listener);
   store.remove("products", "1");
   t.equal(listener.callCount, 1);
-  t.equal(listener.firstCall.args[0].event, "removed");
+  t.equal(listener.firstCall.args[0].name, "removed");
   t.equal(listener.firstCall.args[0].type, "products");
   t.equal(listener.firstCall.args[0].id, "1");
-  t.equal(listener.firstCall.args[0].value, null);
+  t.equal(listener.firstCall.args[0].resource, null);
 });

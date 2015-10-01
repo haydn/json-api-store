@@ -1,7 +1,7 @@
 {
   "name": "json-api-store",
   "version": "0.5.1",
-  "description": "A lightweight library for using JSON API in the browser.",
+  "description": "An isomorphic JavaScript library that acts as an in memory data store for JSON API data.",
   "repository": "haydn/json-api-store",
   "main": "dist/store.js",
   "scripts": {

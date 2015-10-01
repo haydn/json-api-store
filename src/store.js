@@ -101,6 +101,43 @@ export default class Store {
     this._subscriptions = {};
     this._types = {};
 
+    /**
+     * An observable that will emit events when any resource in added, updated
+     * or removed. The object passed to listeners will be in this format:
+     *
+     * <p><pre class="source-code">
+     * { name: string, type: string, id: string, resource: object }
+     * </pre></p>
+     *
+     * You can learn more about RxJS observables at the GitHub repo:
+     * https://github.com/Reactive-Extensions/RxJS
+     *
+     * @type {Rx.Observable}
+     *
+     * @example
+     * let store = new Store();
+     *
+     * store.observable.filter(e => e.name === "added").subscribe(event => {
+     *   console.log(event.name); // "added"
+     *   console.log(event.type); // "products"
+     *   console.log(event.id); // "1"
+     *   console.log(event.resource); // Map {...}
+     * });
+     *
+     * store.observable.filter(e => e.name === "updated").subscribe(event => {
+     *   console.log(event.name); // "updated"
+     *   console.log(event.type); // "products"
+     *   console.log(event.id); // "1"
+     *   console.log(event.resource); // Map {...}
+     * });
+     *
+     * store.observable.filter(e => e.name === "removed").subscribe(event => {
+     *   console.log(event.name); // "removed"
+     *   console.log(event.type); // "products"
+     *   console.log(event.id); // "1"
+     *   console.log(event.resource); // null
+     * });
+     */
     this.observable = this._subject.asObservable();
 
   }
@@ -117,7 +154,7 @@ export default class Store {
   add(object) {
     if (object) {
       if (object.type && object.id) {
-        let event = this._data[object.type] && this._data[object.type][object.id] ? "updated" : "added";
+        let name = this._data[object.type] && this._data[object.type][object.id] ? "updated" : "added";
         let resource = this.find(object.type, object.id);
         let definition = this._types[object.type];
         Object.keys(definition).forEach(fieldName => {
@@ -126,10 +163,10 @@ export default class Store {
           }
         });
         this._subject.onNext({
-          event: event,
+          name: name,
           type: object.type,
           id: object.id,
-          value: resource
+          resource: resource
         });
       } else {
         throw new TypeError(`The data must have a type and id`);
@@ -367,7 +404,7 @@ export default class Store {
         if (id && ({}).toString.call(id) === '[object Function]') {
           this.on.call(this, event, type, null, id, callback);
         } else if (!this._subscriptions[event] || !this._subscriptions[event][type] || !this._subscriptions[event][type][id || "*"]) {
-          let subscription = this._subject.filter(e => e.event === event);
+          let subscription = this._subject.filter(e => e.name === event);
           subscription = subscription.filter(e => this._types[type]._names.indexOf(e.type) !== -1);
           if (id) {
             subscription = subscription.filter(e => e.id === id);
@@ -427,10 +464,10 @@ export default class Store {
           if (resource) {
             this._remove(resource);
             this._subject.onNext({
-              event: "removed",
+              name: "removed",
               type: type,
               id: id,
-              value: null
+              resource: null
             });
           }
         } else {
