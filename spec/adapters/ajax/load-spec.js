@@ -6,7 +6,7 @@ test("load must fetch a single resource from the server and add it to the store"
   var server = sinon.fakeServer.create({ autoRespond: false });
   var adapter = new Store.AjaxAdapter();
   var store = new Store(adapter);
-  t.plan(5);
+  t.plan(6);
   t.timeoutAfter(1000);
   store.define("products", {
     title: Store.attr(),
@@ -15,12 +15,9 @@ test("load must fetch a single resource from the server and add it to the store"
   });
   store.define("categories", {});
   store.define("comments", {});
-  server.respondWith("GET", "/products/12", [
-    200,
-    {
-      "Content-Type": "application/vnd.api+json"
-    },
-    JSON.stringify({
+  server.respondWith("GET", "/products/12", function (request) {
+    t.false(request.requestBody);
+    var data = {
       data: {
         type: "products",
         id: "12",
@@ -48,8 +45,9 @@ test("load must fetch a single resource from the server and add it to the store"
           }
         }
       }
-    })
-  ]);
+    };
+    request.respond(200, { "Content-Type": "application/vnd.api+json" }, JSON.stringify(data));
+  });
   store.load("products", "12", function (product) {
     t.equal(store.find("products", "12"), product);
     t.equal(store.find("products", "12").title, "An Awesome Book");

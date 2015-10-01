@@ -6,17 +6,22 @@ test("create must post a resource to the server and add it to the store on succe
   var server = sinon.fakeServer.create({ autoRespond: false });
   var adapter = new Store.AjaxAdapter();
   var store = new Store(adapter);
-  t.plan(2);
+  t.plan(3);
   t.timeoutAfter(1000);
   store.define("products", {
     title: Store.attr()
   });
-  server.respondWith("POST", "/products", [
-    201,
-    {
-      "Content-Type": "application/vnd.api+json"
-    },
-    JSON.stringify({
+  server.respondWith("POST", "/products", function (request) {
+    t.deepEqual(JSON.parse(request.requestBody), {
+      data: {
+        type: "products",
+        attributes: {
+          title: "My Book"
+        },
+        relationships: {}
+      }
+    });
+    var data = {
       data: {
         type: "products",
         id: "9",
@@ -24,8 +29,9 @@ test("create must post a resource to the server and add it to the store on succe
           title: "My Book"
         }
       }
-    })
-  ]);
+    };
+    request.respond(201, { "Content-Type": "application/vnd.api+json" }, JSON.stringify(data));
+  });
   store.create("products", { title: "My Book" }, function (product) {
     t.equal(product.title, "My Book");
     t.equal(store.find("products", "9").title, "My Book");

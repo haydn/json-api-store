@@ -38,9 +38,9 @@ export default class AjaxAdapter {
         }
       };
 
-      request.send({
-        data: JSON.stringify(store.convert(type, partial))
-      });
+      request.send(JSON.stringify({
+        data: store.convert(type, partial)
+      }));
 
     } else {
       throw new Error(`Unknown type '${type}'`);
@@ -183,9 +183,9 @@ export default class AjaxAdapter {
         }
       };
 
-      request.send({
-        data: JSON.stringify(data)
-      });
+      request.send(JSON.stringify({
+        data: data
+      }));
 
     } else {
       throw new Error(`Unknown type '${type}'`);

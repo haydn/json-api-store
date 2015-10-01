@@ -6,18 +6,24 @@ test("update must update a resource on the server and add reflect the changes in
   var server = sinon.fakeServer.create({ autoRespond: false });
   var adapter = new Store.AjaxAdapter();
   var store = new Store(adapter);
-  t.plan(2);
+  t.plan(3);
   t.timeoutAfter(1000);
   store.define("products", {
     title: Store.attr()
   });
-  server.respondWith("PATCH", "/products/9", [
-    204,
-    {
-      "Content-Type": "application/vnd.api+json"
-    },
-    ""
-  ]);
+  server.respondWith("PATCH", "/products/9", function (request) {
+    t.deepEqual(JSON.parse(request.requestBody), {
+      data: {
+        type: "products",
+        id: "9",
+        attributes: {
+          title: "My Book!"
+        },
+        relationships: {}
+      }
+    });
+    request.respond(204, { "Content-Type": "application/vnd.api+json" }, "");
+  });
   store.add({
     type: "products",
     id: "9",
