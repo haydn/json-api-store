@@ -305,3 +305,18 @@ test("load must throw an error if the type has not been defined", function (t) {
     store.load("products", "1");
   }, /Unknown type 'products'/);
 });
+
+test("load must use the correct content type header", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  t.plan(1);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  server.respondWith("GET", "/products/6", function (request) {
+    t.notEqual(request.requestHeaders["Content-Type"].split(";").indexOf("application/vnd.api+json"), -1);
+  });
+  store.load("products", "6");
+  server.respond();
+  server.restore();
+});

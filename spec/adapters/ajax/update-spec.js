@@ -191,3 +191,18 @@ test("update must throw an error if the type has not been defined", function (t)
     store.update("products", "1", {});
   }, /Unknown type 'products'/);
 });
+
+test("update must use the correct content type header", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  t.plan(1);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  server.respondWith("PATCH", "/products/4", function (request) {
+    t.notEqual(request.requestHeaders["Content-Type"].split(";").indexOf("application/vnd.api+json"), -1);
+  });
+  store.update("products", "4", {});
+  server.respond();
+  server.restore();
+});

@@ -16,6 +16,8 @@ export default class AjaxAdapter {
 
       request.open('POST', `${this._base}/${type}`, true);
 
+      request.setRequestHeader("Content-Type", "application/vnd.api+json");
+
       request.onload = function () {
         if (request.status >= 200 && request.status < 300) {
           let response = JSON.parse(request.responseText);
@@ -57,6 +59,8 @@ export default class AjaxAdapter {
       let request = new XMLHttpRequest();
 
       request.open('DELETE', `${this._base}/${type}/${id}`, true);
+
+      request.setRequestHeader("Content-Type", "application/vnd.api+json");
 
       request.onload = function () {
         if (request.status >= 200 && request.status < 300) {
@@ -122,6 +126,8 @@ export default class AjaxAdapter {
 
       request.open('GET', url, true);
 
+      request.setRequestHeader("Content-Type", "application/vnd.api+json");
+
       request.onload = function () {
         if (request.status >= 200 && request.status < 300) {
           try {
@@ -157,6 +163,8 @@ export default class AjaxAdapter {
       let data = store.convert(type, id, partial);
 
       request.open('PATCH', `${this._base}/${type}/${id}`, true);
+
+      request.setRequestHeader("Content-Type", "application/vnd.api+json");
 
       request.onload = function () {
         if (request.status >= 200 && request.status < 300) {
