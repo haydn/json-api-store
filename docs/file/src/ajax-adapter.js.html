@@ -66,6 +66,8 @@
 
       request.open(&apos;POST&apos;, `${this._base}/${type}`, true);
 
+      request.setRequestHeader(&quot;Content-Type&quot;, &quot;application/vnd.api+json&quot;);
+
       request.onload = function () {
         if (request.status &gt;= 200 &amp;&amp; request.status &lt; 300) {
           let response = JSON.parse(request.responseText);
@@ -86,9 +88,9 @@
         }
       };
 
-      request.send({
-        data: JSON.stringify(store.convert(type, partial))
-      });
+      request.send(JSON.stringify({
+        data: store.convert(type, partial)
+      }));
 
     } else {
       throw new Error(`Unknown type &apos;${type}&apos;`);
@@ -107,6 +109,8 @@
       let request = new XMLHttpRequest();
 
       request.open(&apos;DELETE&apos;, `${this._base}/${type}/${id}`, true);
+
+      request.setRequestHeader(&quot;Content-Type&quot;, &quot;application/vnd.api+json&quot;);
 
       request.onload = function () {
         if (request.status &gt;= 200 &amp;&amp; request.status &lt; 300) {
@@ -172,6 +176,8 @@
 
       request.open(&apos;GET&apos;, url, true);
 
+      request.setRequestHeader(&quot;Content-Type&quot;, &quot;application/vnd.api+json&quot;);
+
       request.onload = function () {
         if (request.status &gt;= 200 &amp;&amp; request.status &lt; 300) {
           try {
@@ -208,6 +214,8 @@
 
       request.open(&apos;PATCH&apos;, `${this._base}/${type}/${id}`, true);
 
+      request.setRequestHeader(&quot;Content-Type&quot;, &quot;application/vnd.api+json&quot;);
+
       request.onload = function () {
         if (request.status &gt;= 200 &amp;&amp; request.status &lt; 300) {
           try {
@@ -225,9 +233,9 @@
         }
       };
 
-      request.send({
-        data: JSON.stringify(data)
-      });
+      request.send(JSON.stringify({
+        data: data
+      }));
 
     } else {
       throw new Error(`Unknown type &apos;${type}&apos;`);
