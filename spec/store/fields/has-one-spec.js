@@ -9,6 +9,117 @@ test("hasOne must return the correct type attribute", function (t) {
   t.equal(Store.hasOne("example", {}).type, "has-one");
 });
 
+test("hasOne must return a serialize function that maps a relationship to data", function (t) {
+  var store = new Store();
+  var field = Store.hasOne();
+  var resource = {
+    type: "products",
+    id: "1",
+    category: {
+      type: "categories",
+      id: "2"
+    }
+  };
+  var data = {
+    "relationships": {}
+  };
+  t.plan(1);
+  store.define("categories", {});
+  store.define("products", {});
+  field.serialize.call(store, resource, data, "category");
+  t.deepEqual(data, {
+    relationships: {
+      category: {
+        data: {
+          type: "categories",
+          id: "2"
+        }
+      }
+    }
+  });
+});
+
+test("hasOne must return a serialize function that skips missing relationships", function (t) {
+  var store = new Store();
+  var field = Store.hasOne();
+  var resource = {
+    type: "products",
+    id: "1"
+  };
+  var data = {
+    "relationships": {}
+  };
+  t.plan(1);
+  store.define("categories", {});
+  store.define("products", {});
+  field.serialize.call(store, resource, data, "category");
+  t.deepEqual(data, {
+    relationships: {}
+  });
+});
+
+test("hasOne must return a serialize function that sets null relationships as null", function (t) {
+  var store = new Store();
+  var field = Store.hasOne();
+  var resource = {
+    type: "products",
+    id: "1",
+    category: null
+  };
+  var data = {
+    "relationships": {}
+  };
+  t.plan(1);
+  store.define("categories", {});
+  store.define("products", {});
+  field.serialize.call(store, resource, data, "category");
+  t.deepEqual(data, {
+    relationships: {
+      category: null
+    }
+  });
+});
+
+test("hasOne must return a serialize function that uses the name option if it's provided", function (t) {
+  var store = new Store();
+  var field = Store.hasOne("category-x");
+  var resource = {
+    type: "products",
+    id: "1",
+    category: {
+      type: "categories",
+      id: "2"
+    },
+    foo: null
+  };
+  var data = {
+    "relationships": {}
+  };
+  t.plan(2);
+  store.define("categories", {});
+  store.define("products", {});
+  field.serialize.call(store, resource, data, "category");
+  t.deepEqual(data, {
+    relationships: {
+      "category-x": {
+        data: {
+          type: "categories",
+          id: "2"
+        }
+      }
+    }
+  });
+  data = {
+    "relationships": {}
+  };
+  field.serialize.call(store, resource, data, "foo");
+  t.deepEqual(data, {
+    relationships: {
+      "category-x": null
+    }
+  });
+});
+
 test("hasOne must return a deserialize function that maps to the relation described in the data property", function (t) {
   var store = new Store();
   var field = Store.hasOne("category");
