@@ -35,7 +35,7 @@ store.observable.subscribe(function (event) {
 });
 
 // Load all the products.
-store.load("products", { include: [ "category" ] }, function (products) {
+store.load("products", { include: "category" }, function (products) {
 
   products.length; // 1
   products[0].id; // "1"
