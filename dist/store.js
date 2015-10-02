@@ -12,6 +12,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 require("array.prototype.find");
 
+var _rxLite = require("rx-lite");
+
+var _rxLite2 = _interopRequireDefault(_rxLite);
+
 var _ajaxAdapter = require("./ajax-adapter");
 
 var _ajaxAdapter2 = _interopRequireDefault(_ajaxAdapter);
@@ -141,10 +145,50 @@ var Store = (function () {
     _classCallCheck(this, Store);
 
     this._adapter = adapter;
-    this._collectionListeners = { "added": {}, "updated": {}, "removed": {} };
     this._data = {};
-    this._resourceListeners = { "added": {}, "updated": {}, "removed": {} };
+    this._subject = new _rxLite2["default"].Subject();
+    this._subscriptions = {};
     this._types = {};
+
+    /**
+     * An observable that will emit events when any resource in added, updated
+     * or removed. The object passed to listeners will be in this format:
+     *
+     * <p><pre class="source-code">
+     * { name: string, type: string, id: string, resource: object }
+     * </pre></p>
+     *
+     * You can learn more about RxJS observables at the GitHub repo:
+     * https://github.com/Reactive-Extensions/RxJS
+     *
+     * @type {Rx.Observable}
+     * @since 0.6.0
+     *
+     * @example
+     * let store = new Store();
+     *
+     * store.observable.filter(e => e.name === "added").subscribe(event => {
+     *   console.log(event.name); // "added"
+     *   console.log(event.type); // "products"
+     *   console.log(event.id); // "1"
+     *   console.log(event.resource); // Map {...}
+     * });
+     *
+     * store.observable.filter(e => e.name === "updated").subscribe(event => {
+     *   console.log(event.name); // "updated"
+     *   console.log(event.type); // "products"
+     *   console.log(event.id); // "1"
+     *   console.log(event.resource); // Map {...}
+     * });
+     *
+     * store.observable.filter(e => e.name === "removed").subscribe(event => {
+     *   console.log(event.name); // "removed"
+     *   console.log(event.type); // "products"
+     *   console.log(event.id); // "1"
+     *   console.log(event.resource); // null
+     * });
+     */
+    this.observable = this._subject.asObservable();
   }
 
   /**
@@ -152,9 +196,8 @@ var Store = (function () {
    * `push()` method.
    *
    * @since 0.1.0
-   * @param {!Object} object - Resource Object to add. See:
+   * @param {!Object} object - A JSON API Resource Object to be added. See:
             http://jsonapi.org/format/#document-resource-objects
-   * @return {undefined} - Nothing.
    */
 
   _createClass(Store, [{
@@ -165,7 +208,7 @@ var Store = (function () {
       if (object) {
         if (object.type && object.id) {
           (function () {
-            var event = _this2._data[object.type] && _this2._data[object.type][object.id] ? "updated" : "added";
+            var name = _this2._data[object.type] && _this2._data[object.type][object.id] ? "updated" : "added";
             var resource = _this2.find(object.type, object.id);
             var definition = _this2._types[object.type];
             Object.keys(definition).forEach(function (fieldName) {
@@ -173,16 +216,12 @@ var Store = (function () {
                 _this2._addField(object, resource, definition, fieldName);
               }
             });
-            if (_this2._resourceListeners[event][object.type] && _this2._resourceListeners[event][object.type][object.id]) {
-              _this2._resourceListeners[event][object.type][object.id].forEach(function (x) {
-                return x[0].call(x[1], resource);
-              });
-            }
-            if (_this2._collectionListeners[event][object.type]) {
-              _this2._collectionListeners[event][object.type].forEach(function (x) {
-                return x[0].call(x[1], resource);
-              });
-            }
+            _this2._subject.onNext({
+              name: name,
+              type: object.type,
+              id: object.id,
+              resource: resource
+            });
           })();
         } else {
           throw new TypeError("The data must have a type and id");
@@ -245,7 +284,6 @@ var Store = (function () {
      * @param {function} [success] - Callback on success.
      * @param {function} [error] - Callback on error.
      * @param {Object} [context] - Context for the callbacks.
-     * @return {undefined} - Nothing.
      *
      * @example
      * let adapter = new Store.AjaxAdapter();
@@ -270,7 +308,6 @@ var Store = (function () {
      * @since 0.2.0
      * @param {!string|string[]} names - Name(s) of the resource.
      * @param {!Object} definition - The resource's definition.
-     * @return {undefined} - Nothing.
      */
   }, {
     key: "define",
@@ -302,7 +339,6 @@ var Store = (function () {
      * @param {function} [success] - Callback on success.
      * @param {function} [error] - Callback on error.
      * @param {Object} [context] - Context for the callbacks.
-     * @return {undefined} - Nothing.
      *
      * @example
      * let adapter = new Store.AjaxAdapter();
@@ -395,7 +431,6 @@ var Store = (function () {
      * @param {function} [success] - Callback on success.
      * @param {function} [error] - Callback on error.
      * @param {Object} [context] - Context for the callbacks.
-     * @return {undefined} - Nothing.
      *
      * @example
      * let adapter = new Store.AjaxAdapter();
@@ -417,37 +452,23 @@ var Store = (function () {
     /**
      * Unregister an event listener that was registered with on().
      *
+     * @deprecated Use the <code>store.observable</code> property instead of this.
      * @since 0.4.0
      * @param {string} event - Name of the event.
      * @param {string} type - Name of resource to originally passed to on().
      * @param {string} [id] - ID of the resource to originally passed to on().
      * @param {function} callback - Function originally passed to on().
-     * @return {undefined} - Nothing.
      */
   }, {
     key: "off",
     value: function off(event, type, id, callback) {
-      var _this6 = this;
-
-      if (this._resourceListeners[event] && this._collectionListeners[event]) {
+      if (event === "added" || event === "updated" || event === "removed") {
         if (this._types[type]) {
           if (id && ({}).toString.call(id) === '[object Function]') {
             this.off.call(this, event, type, null, id, callback);
-          } else {
-            // TODO: Performance-wise, this can be made way better. There shouldn't be a need to maintain separate lists.
-            this._types[type]._names.forEach(function (type) {
-              if (id) {
-                if (_this6._resourceListeners[event][type] && _this6._resourceListeners[event][type][id]) {
-                  _this6._resourceListeners[event][type][id] = _this6._resourceListeners[event][type][id].filter(function (x) {
-                    return x[0] !== callback;
-                  });
-                }
-              } else if (_this6._collectionListeners[event][type]) {
-                _this6._collectionListeners[event][type] = _this6._collectionListeners[event][type].filter(function (x) {
-                  return x[0] !== callback;
-                });
-              }
-            });
+          } else if (this._subscriptions[event] && this._subscriptions[event][type] && this._subscriptions[event][type][id || "*"]) {
+            this._subscriptions[event][type][id || "*"].dispose();
+            delete this._subscriptions[event][type][id || "*"];
           }
         } else {
           throw new Error("Unknown type '" + type + "'");
@@ -460,43 +481,48 @@ var Store = (function () {
     /**
      * Register an event listener: "added", "updated" or "removed".
      *
+     * @deprecated Use the <code>store.observable</code> property instead of this.
      * @since 0.4.0
      * @param {string} event - Name of the event.
      * @param {string} type - Name of resource to watch.
      * @param {string} [id] - ID of the resource to watch.
      * @param {function} callback - Function to call when the event occurs.
      * @param {Object} [context] - Context in which to call the callback.
-     * @return {undefined} - Nothing.
      */
   }, {
     key: "on",
     value: function on(event, type, id, callback, context) {
-      var _this7 = this;
+      var _this6 = this;
 
-      if (this._resourceListeners[event] && this._collectionListeners[event]) {
+      if (event === "added" || event === "updated" || event === "removed") {
         if (this._types[type]) {
           if (id && ({}).toString.call(id) === '[object Function]') {
             this.on.call(this, event, type, null, id, callback);
-          } else {
-            // TODO: Performance-wise, this can be made way better. There shouldn't be a need to maintain separate lists.
-            this._types[type]._names.forEach(function (type) {
-              if (id) {
-                _this7._resourceListeners[event][type] = _this7._resourceListeners[event][type] || {};
-                _this7._resourceListeners[event][type][id] = _this7._resourceListeners[event][type][id] || [];
-                if (!_this7._resourceListeners[event][type][id].find(function (x) {
-                  return x[0] === callback;
-                })) {
-                  _this7._resourceListeners[event][type][id].push([callback, context]);
-                }
-              } else {
-                _this7._collectionListeners[event][type] = _this7._collectionListeners[event][type] || [];
-                if (!_this7._collectionListeners[event][type].find(function (x) {
-                  return x[0] === callback;
-                })) {
-                  _this7._collectionListeners[event][type].push([callback, context]);
-                }
-              }
+          } else if (!this._subscriptions[event] || !this._subscriptions[event][type] || !this._subscriptions[event][type][id || "*"]) {
+            var subscription = this._subject.filter(function (e) {
+              return e.name === event;
             });
+            subscription = subscription.filter(function (e) {
+              return _this6._types[type]._names.indexOf(e.type) !== -1;
+            });
+            if (id) {
+              subscription = subscription.filter(function (e) {
+                return e.id === id;
+              });
+            }
+            subscription = subscription.map(function (e) {
+              return _this6.find(e.type, e.id);
+            });
+            this._subscriptions[event] = this._subscriptions[event] || {};
+            if (!this._subscriptions[event][type]) {
+              (function () {
+                var obj = {};
+                _this6._types[type]._names.forEach(function (type) {
+                  _this6._subscriptions[event][type] = obj;
+                });
+              })();
+            }
+            this._subscriptions[event][type][id || "*"] = subscription.subscribe(callback.bind(context));
           }
         } else {
           throw new Error("Unknown type '" + type + "'");
@@ -513,23 +539,22 @@ var Store = (function () {
      * @since 0.1.0
      * @param {Object} root - Top Level Object to push. See:
                               http://jsonapi.org/format/#document-top-level
-     * @return {undefined} - Nothing.
      */
   }, {
     key: "push",
     value: function push(root) {
-      var _this8 = this;
+      var _this7 = this;
 
       if (root.data.constructor === Array) {
         root.data.forEach(function (x) {
-          return _this8.add(x);
+          return _this7.add(x);
         });
       } else {
         this.add(root.data);
       }
       if (root.included) {
         root.included.forEach(function (x) {
-          return _this8.add(x);
+          return _this7.add(x);
         });
       }
     }
@@ -541,35 +566,28 @@ var Store = (function () {
      * @param {!string} type - Type of the resource(s) to remove.
      * @param {string} [id] - The id of the resource to remove. If omitted all
      *                        resources of the type will be removed.
-     * @return {undefined} - Nothing.
      */
   }, {
     key: "remove",
     value: function remove(type, id) {
-      var _this9 = this;
+      var _this8 = this;
 
       if (type) {
         if (this._types[type]) {
           if (id) {
-            (function () {
-              var resource = _this9._data[type] && _this9._data[type][id];
-              if (resource) {
-                _this9._remove(resource);
-                if (_this9._resourceListeners["removed"][type] && _this9._resourceListeners["removed"][type][id]) {
-                  _this9._resourceListeners["removed"][type][id].forEach(function (x) {
-                    return x[0].call(x[1], resource);
-                  });
-                }
-                if (_this9._collectionListeners["removed"][type]) {
-                  _this9._collectionListeners["removed"][type].forEach(function (x) {
-                    return x[0].call(x[1], resource);
-                  });
-                }
-              }
-            })();
+            var resource = this._data[type] && this._data[type][id];
+            if (resource) {
+              this._remove(resource);
+              this._subject.onNext({
+                name: "removed",
+                type: type,
+                id: id,
+                resource: null
+              });
+            }
           } else {
             Object.keys(this._data[type]).forEach(function (id) {
-              return _this9.remove(type, id);
+              return _this8.remove(type, id);
             });
           }
         } else {
@@ -591,7 +609,6 @@ var Store = (function () {
      * @param {function} [success] - Callback on success.
      * @param {function} [error] - Callback on error.
      * @param {Object} [context] - Context for the callbacks.
-     * @return {undefined} - Nothing.
      *
      * @example
      * let adapter = new Store.AjaxAdapter();
@@ -612,7 +629,7 @@ var Store = (function () {
   }, {
     key: "_addField",
     value: function _addField(object, resource, definition, fieldName) {
-      var _this10 = this;
+      var _this9 = this;
 
       var field = definition[fieldName];
       var newValue = field.deserialize.call(this, object, fieldName);
@@ -627,11 +644,11 @@ var Store = (function () {
         } else if (field.type === "has-many") {
           resource[fieldName].forEach(function (r) {
             if (resource[fieldName].indexOf(r) !== -1) {
-              _this10._removeInverseRelationship(resource, fieldName, r, field);
+              _this9._removeInverseRelationship(resource, fieldName, r, field);
             }
           });
           newValue.forEach(function (r) {
-            _this10._addInverseRelationship(resource, fieldName, r, field);
+            _this9._addInverseRelationship(resource, fieldName, r, field);
           });
         }
         resource[fieldName] = newValue;
@@ -668,11 +685,11 @@ var Store = (function () {
   }, {
     key: "_remove",
     value: function _remove(resource) {
-      var _this11 = this;
+      var _this10 = this;
 
       resource._dependents.forEach(function (dependent) {
-        var dependentResource = _this11._data[dependent.type][dependent.id];
-        switch (_this11._types[dependent.type][dependent.fieldName].type) {
+        var dependentResource = _this10._data[dependent.type][dependent.id];
+        switch (_this10._types[dependent.type][dependent.fieldName].type) {
           case "has-one":
             {
               dependentResource[dependent.fieldName] = null;

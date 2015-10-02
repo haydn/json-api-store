@@ -49,6 +49,7 @@
 
 <div class="content" data-ice="content"><h1 data-ice="title">src/store.js</h1>
 <pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">import &quot;array.prototype.find&quot;;
+import Rx from &quot;rx-lite&quot;;
 import AjaxAdapter from &quot;./ajax-adapter&quot;;
 
 export default class Store {
@@ -164,11 +165,53 @@ export default class Store {
   }
 
   constructor(adapter) {
+
     this._adapter = adapter;
-    this._collectionListeners = { &quot;added&quot;: {}, &quot;updated&quot;: {}, &quot;removed&quot;: {} };
     this._data = {};
-    this._resourceListeners = { &quot;added&quot;: {}, &quot;updated&quot;: {}, &quot;removed&quot;: {} };
+    this._subject = new Rx.Subject();
+    this._subscriptions = {};
     this._types = {};
+
+    /**
+     * An observable that will emit events when any resource in added, updated
+     * or removed. The object passed to listeners will be in this format:
+     *
+     * &lt;p&gt;&lt;pre class=&quot;source-code&quot;&gt;
+     * { name: string, type: string, id: string, resource: object }
+     * &lt;/pre&gt;&lt;/p&gt;
+     *
+     * You can learn more about RxJS observables at the GitHub repo:
+     * https://github.com/Reactive-Extensions/RxJS
+     *
+     * @type {Rx.Observable}
+     * @since 0.6.0
+     *
+     * @example
+     * let store = new Store();
+     *
+     * store.observable.filter(e =&gt; e.name === &quot;added&quot;).subscribe(event =&gt; {
+     *   console.log(event.name); // &quot;added&quot;
+     *   console.log(event.type); // &quot;products&quot;
+     *   console.log(event.id); // &quot;1&quot;
+     *   console.log(event.resource); // Map {...}
+     * });
+     *
+     * store.observable.filter(e =&gt; e.name === &quot;updated&quot;).subscribe(event =&gt; {
+     *   console.log(event.name); // &quot;updated&quot;
+     *   console.log(event.type); // &quot;products&quot;
+     *   console.log(event.id); // &quot;1&quot;
+     *   console.log(event.resource); // Map {...}
+     * });
+     *
+     * store.observable.filter(e =&gt; e.name === &quot;removed&quot;).subscribe(event =&gt; {
+     *   console.log(event.name); // &quot;removed&quot;
+     *   console.log(event.type); // &quot;products&quot;
+     *   console.log(event.id); // &quot;1&quot;
+     *   console.log(event.resource); // null
+     * });
+     */
+    this.observable = this._subject.asObservable();
+
   }
 
   /**
@@ -176,14 +219,13 @@ export default class Store {
    * `push()` method.
    *
    * @since 0.1.0
-   * @param {!Object} object - Resource Object to add. See:
+   * @param {!Object} object - A JSON API Resource Object to be added. See:
             http://jsonapi.org/format/#document-resource-objects
-   * @return {undefined} - Nothing.
    */
   add(object) {
     if (object) {
       if (object.type &amp;&amp; object.id) {
-        let event = this._data[object.type] &amp;&amp; this._data[object.type][object.id] ? &quot;updated&quot; : &quot;added&quot;;
+        let name = this._data[object.type] &amp;&amp; this._data[object.type][object.id] ? &quot;updated&quot; : &quot;added&quot;;
         let resource = this.find(object.type, object.id);
         let definition = this._types[object.type];
         Object.keys(definition).forEach(fieldName =&gt; {
@@ -191,12 +233,12 @@ export default class Store {
             this._addField(object, resource, definition, fieldName);
           }
         });
-        if (this._resourceListeners[event][object.type] &amp;&amp; this._resourceListeners[event][object.type][object.id]) {
-           this._resourceListeners[event][object.type][object.id].forEach(x =&gt; x[0].call(x[1], resource));
-        }
-        if (this._collectionListeners[event][object.type]) {
-          this._collectionListeners[event][object.type].forEach(x =&gt; x[0].call(x[1], resource));
-        }
+        this._subject.onNext({
+          name: name,
+          type: object.type,
+          id: object.id,
+          resource: resource
+        });
       } else {
         throw new TypeError(`The data must have a type and id`);
       }
@@ -248,7 +290,6 @@ export default class Store {
    * @param {function} [success] - Callback on success.
    * @param {function} [error] - Callback on error.
    * @param {Object} [context] - Context for the callbacks.
-   * @return {undefined} - Nothing.
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
@@ -271,7 +312,6 @@ export default class Store {
    * @since 0.2.0
    * @param {!string|string[]} names - Name(s) of the resource.
    * @param {!Object} definition - The resource&apos;s definition.
-   * @return {undefined} - Nothing.
    */
   define(names, definition) {
     names = (names.constructor === Array) ? names : [ names ];
@@ -299,7 +339,6 @@ export default class Store {
    * @param {function} [success] - Callback on success.
    * @param {function} [error] - Callback on error.
    * @param {Object} [context] - Context for the callbacks.
-   * @return {undefined} - Nothing.
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
@@ -372,7 +411,6 @@ export default class Store {
    * @param {function} [success] - Callback on success.
    * @param {function} [error] - Callback on error.
    * @param {Object} [context] - Context for the callbacks.
-   * @return {undefined} - Nothing.
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
@@ -392,33 +430,21 @@ export default class Store {
   /**
    * Unregister an event listener that was registered with on().
    *
+   * @deprecated Use the &lt;code&gt;store.observable&lt;/code&gt; property instead of this.
    * @since 0.4.0
    * @param {string} event - Name of the event.
    * @param {string} type - Name of resource to originally passed to on().
    * @param {string} [id] - ID of the resource to originally passed to on().
    * @param {function} callback - Function originally passed to on().
-   * @return {undefined} - Nothing.
    */
   off(event, type, id, callback) {
-    if (this._resourceListeners[event] &amp;&amp; this._collectionListeners[event]) {
+    if (event === &quot;added&quot; || event === &quot;updated&quot; || event === &quot;removed&quot;) {
       if (this._types[type]) {
         if (id &amp;&amp; ({}).toString.call(id) === &apos;[object Function]&apos;) {
           this.off.call(this, event, type, null, id, callback);
-        } else {
-          // TODO: Performance-wise, this can be made way better. There shouldn&apos;t be a need to maintain separate lists.
-          this._types[type]._names.forEach(type =&gt; {
-            if (id) {
-              if (this._resourceListeners[event][type] &amp;&amp; this._resourceListeners[event][type][id]) {
-                this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id].filter(x =&gt; {
-                  return x[0] !== callback;
-                });
-              }
-            } else if (this._collectionListeners[event][type]) {
-              this._collectionListeners[event][type] = this._collectionListeners[event][type].filter(x =&gt; {
-                return x[0] !== callback;
-              });
-            }
-          });
+        } else if (this._subscriptions[event] &amp;&amp; this._subscriptions[event][type] &amp;&amp; this._subscriptions[event][type][id || &quot;*&quot;]) {
+          this._subscriptions[event][type][id || &quot;*&quot;].dispose();
+          delete this._subscriptions[event][type][id || &quot;*&quot;];
         }
       } else {
         throw new Error(`Unknown type &apos;${type}&apos;`);
@@ -431,35 +457,34 @@ export default class Store {
   /**
    * Register an event listener: &quot;added&quot;, &quot;updated&quot; or &quot;removed&quot;.
    *
+   * @deprecated Use the &lt;code&gt;store.observable&lt;/code&gt; property instead of this.
    * @since 0.4.0
    * @param {string} event - Name of the event.
    * @param {string} type - Name of resource to watch.
    * @param {string} [id] - ID of the resource to watch.
    * @param {function} callback - Function to call when the event occurs.
    * @param {Object} [context] - Context in which to call the callback.
-   * @return {undefined} - Nothing.
    */
   on(event, type, id, callback, context) {
-    if (this._resourceListeners[event] &amp;&amp; this._collectionListeners[event]) {
+    if (event === &quot;added&quot; || event === &quot;updated&quot; || event === &quot;removed&quot;) {
       if (this._types[type]) {
         if (id &amp;&amp; ({}).toString.call(id) === &apos;[object Function]&apos;) {
           this.on.call(this, event, type, null, id, callback);
-        } else {
-          // TODO: Performance-wise, this can be made way better. There shouldn&apos;t be a need to maintain separate lists.
-          this._types[type]._names.forEach(type =&gt; {
-            if (id) {
-              this._resourceListeners[event][type] = this._resourceListeners[event][type] || {};
-              this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id] || [];
-              if (!this._resourceListeners[event][type][id].find(x =&gt; x[0] === callback)) {
-                this._resourceListeners[event][type][id].push([ callback, context ]);
-              }
-            } else {
-              this._collectionListeners[event][type] = this._collectionListeners[event][type] || [];
-              if (!this._collectionListeners[event][type].find(x =&gt; x[0] === callback)) {
-                this._collectionListeners[event][type].push([ callback, context ]);
-              }
-            }
-          });
+        } else if (!this._subscriptions[event] || !this._subscriptions[event][type] || !this._subscriptions[event][type][id || &quot;*&quot;]) {
+          let subscription = this._subject.filter(e =&gt; e.name === event);
+          subscription = subscription.filter(e =&gt; this._types[type]._names.indexOf(e.type) !== -1);
+          if (id) {
+            subscription = subscription.filter(e =&gt; e.id === id);
+          }
+          subscription = subscription.map(e =&gt; this.find(e.type, e.id));
+          this._subscriptions[event] = this._subscriptions[event] || {};
+          if (!this._subscriptions[event][type]) {
+            let obj = {};
+            this._types[type]._names.forEach(type =&gt; {
+              this._subscriptions[event][type] = obj;
+            });
+          }
+          this._subscriptions[event][type][id || &quot;*&quot;] = subscription.subscribe(callback.bind(context));
         }
       } else {
         throw new Error(`Unknown type &apos;${type}&apos;`);
@@ -476,7 +501,6 @@ export default class Store {
    * @since 0.1.0
    * @param {Object} root - Top Level Object to push. See:
                             http://jsonapi.org/format/#document-top-level
-   * @return {undefined} - Nothing.
    */
   push(root) {
     if (root.data.constructor === Array) {
@@ -496,7 +520,6 @@ export default class Store {
    * @param {!string} type - Type of the resource(s) to remove.
    * @param {string} [id] - The id of the resource to remove. If omitted all
    *                        resources of the type will be removed.
-   * @return {undefined} - Nothing.
    */
   remove(type, id) {
     if (type) {
@@ -505,12 +528,12 @@ export default class Store {
           let resource = this._data[type] &amp;&amp; this._data[type][id];
           if (resource) {
             this._remove(resource);
-            if (this._resourceListeners[&quot;removed&quot;][type] &amp;&amp; this._resourceListeners[&quot;removed&quot;][type][id]) {
-               this._resourceListeners[&quot;removed&quot;][type][id].forEach(x =&gt; x[0].call(x[1], resource));
-            }
-            if (this._collectionListeners[&quot;removed&quot;][type]) {
-              this._collectionListeners[&quot;removed&quot;][type].forEach(x =&gt; x[0].call(x[1], resource));
-            }
+            this._subject.onNext({
+              name: &quot;removed&quot;,
+              type: type,
+              id: id,
+              resource: null
+            });
           }
         } else {
           Object.keys(this._data[type]).forEach(id =&gt; this.remove(type, id));
@@ -534,7 +557,6 @@ export default class Store {
    * @param {function} [success] - Callback on success.
    * @param {function} [error] - Callback on error.
    * @param {Object} [context] - Context for the callbacks.
-   * @return {undefined} - Nothing.
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
@@ -660,10 +682,11 @@ export default class Store {
 
 Store.AjaxAdapter = AjaxAdapter;
 </code></pre>
+
 </div>
 
 <footer class="footer">
-  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.2.2)</span></a>
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.2.6)</span></a>
 </footer>
 
 <script src="script/search_index.js"></script>

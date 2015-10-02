@@ -1,7 +1,7 @@
 {
   "name": "json-api-store",
-  "version": "0.5.2",
-  "description": "A lightweight library for using JSON API in the browser.",
+  "version": "0.5.3",
+  "description": "An isomorphic JavaScript library that acts as an in memory data store for JSON API data.",
   "repository": "haydn/json-api-store",
   "main": "dist/store.js",
   "scripts": {
@@ -15,6 +15,7 @@
   "devDependencies": {
     "babel": "^5.8.21",
     "babelify": "^6.2.0",
+    "browser-run": "2.5.0",
     "browserify": "^11.0.1",
     "chokidar-cli": "^1.0.1",
     "esdoc": "^0.2.2",
@@ -28,6 +29,7 @@
     "uglifyify": "^3.0.1"
   },
   "dependencies": {
-    "array.prototype.find": "^1.0.0"
+    "array.prototype.find": "^1.0.0",
+    "rx-lite": "^3.1.2"
   }
 }

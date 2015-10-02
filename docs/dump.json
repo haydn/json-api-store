@@ -291,7 +291,7 @@
     "access": null,
     "description": null,
     "lineNumber": 1,
-    "content": "import \"array.prototype.find\";\nimport AjaxAdapter from \"./ajax-adapter\";\n\nexport default class Store {\n\n  /**\n   * Creates a field definition for an attribute.\n   *\n   * @since 0.1.0\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.default] - Default value for this field.\n   * @return {Object} - Field definition.\n   */\n  static attr(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.attr(null, name);\n    } else {\n      return {\n        type: \"attr\",\n        default: options && options.default,\n        deserialize: function (data, key) {\n          return data.attributes && data.attributes[name || key];\n        },\n        serialize: function (resource, data, key) {\n          data.attributes[name || key] = resource[key];\n        }\n      };\n    }\n  }\n\n  /**\n   * Creates a field definition for an has-one relationship.\n   *\n   * @since 0.1.0\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.inverse] - Name of the inverse relationship.\n   * @return {Object} - Field definition.\n   */\n  static hasOne(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.hasOne(null, name);\n    } else {\n      return {\n        type: \"has-one\",\n        inverse: options && options.inverse,\n        deserialize: function (data, key) {\n          name = name || key;\n          if (data.relationships && data.relationships[name]) {\n            if (data.relationships[name].data === null) {\n              return null;\n            } else if (data.relationships[name].data) {\n              return this.find(data.relationships[name].data.type, data.relationships[name].data.id);\n            }\n          }\n        },\n        serialize: function serialize(resource, data, key) {\n          if (resource[key] === null) {\n            data.relationships[name || key] = null;\n          } else if (resource[key]) {\n            data.relationships[name || key] = {\n              data: {\n                type: resource[key].type,\n                id: resource[key].id\n              }\n            };\n          }\n        }\n      };\n    }\n  }\n\n  /**\n   * Creates a field definition for an has-many relationship.\n   *\n   * @since 0.1.0\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.inverse] - Name of the inverse relationship.\n   * @return {Object} - Field definition.\n   */\n  static hasMany(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.hasMany(null, name);\n    } else {\n      return {\n        type: \"has-many\",\n        default: [],\n        inverse: options && options.inverse,\n        deserialize: function (data, key) {\n          name = name || key;\n          if (data.relationships && data.relationships[name]) {\n            if (data.relationships[name].data === null) {\n              return [];\n            } else if (data.relationships[name].data) {\n              return data.relationships[name].data.map((c) => {\n                return this.find(c.type, c.id);\n              });\n            }\n          }\n        },\n        serialize: function serialize(resource, data, key) {\n          if (resource[key]) {\n            data.relationships[name || key] = {\n              data: resource[key].map(x => {\n                return { type: x.type, id: x.id };\n              })\n            };\n          }\n        }\n      };\n    }\n  }\n\n  constructor(adapter) {\n    this._adapter = adapter;\n    this._collectionListeners = { \"added\": {}, \"updated\": {}, \"removed\": {} };\n    this._data = {};\n    this._resourceListeners = { \"added\": {}, \"updated\": {}, \"removed\": {} };\n    this._types = {};\n  }\n\n  /**\n   * Add an individual resource to the store. This is used internally by the\n   * `push()` method.\n   *\n   * @since 0.1.0\n   * @param {!Object} object - Resource Object to add. See:\n            http://jsonapi.org/format/#document-resource-objects\n   * @return {undefined} - Nothing.\n   */\n  add(object) {\n    if (object) {\n      if (object.type && object.id) {\n        let event = this._data[object.type] && this._data[object.type][object.id] ? \"updated\" : \"added\";\n        let resource = this.find(object.type, object.id);\n        let definition = this._types[object.type];\n        Object.keys(definition).forEach(fieldName => {\n          if (fieldName[0] !== \"_\") {\n            this._addField(object, resource, definition, fieldName);\n          }\n        });\n        if (this._resourceListeners[event][object.type] && this._resourceListeners[event][object.type][object.id]) {\n           this._resourceListeners[event][object.type][object.id].forEach(x => x[0].call(x[1], resource));\n        }\n        if (this._collectionListeners[event][object.type]) {\n          this._collectionListeners[event][object.type].forEach(x => x[0].call(x[1], resource));\n        }\n      } else {\n        throw new TypeError(`The data must have a type and id`);\n      }\n    } else {\n      throw new TypeError(`You must provide data to add`);\n    }\n  }\n\n  /**\n   * Converts the given partial into a JSON API compliant representation.\n   *\n   * @since 0.5.0\n   * @param {!string} [type] - The type of the resource. This can be omitted if the partial includes a type property.\n   * @param {!string} [id] - The id of the resource. This can be omitted if the partial includes an id property.\n   * @param {!object} partial - The data to convert.\n   * @return {object} - JSON API version of the object.\n   */\n  convert(type, id, partial) {\n    if (type && typeof type === \"object\") {\n      return this.convert(type.type, type.id, type);\n    } else if (id && typeof id === \"object\") {\n      return this.convert(type, id.id, id);\n    } else {\n      let data = {\n        type: type,\n        attributes: {},\n        relationships: {}\n      };\n      if (id) {\n        data.id = id;\n      }\n      let definition = this._types[data.type];\n      Object.keys(definition).forEach(fieldName => {\n        if (fieldName[0] !== \"_\") {\n          definition[fieldName].serialize(partial, data, fieldName);\n        }\n      });\n      return data;\n    }\n  }\n\n  /**\n   * Attempts to create the resource through the adapter and adds it to  the\n   * store if successful.\n   *\n   * @since 0.5.0\n   * @param {!string} type - Type of resource.\n   * @param {!Object} partial - Data to create the resource with.\n   * @param {function} [success] - Callback on success.\n   * @param {function} [error] - Callback on error.\n   * @param {Object} [context] - Context for the callbacks.\n   * @return {undefined} - Nothing.\n   *\n   * @example\n   * let adapter = new Store.AjaxAdapter();\n   * let store = new Store(adpater);\n   * store.create(\"product\", { title: \"A Book\" }, (product) => {\n   *   console.log(product.title);\n   * });\n   */\n  create(type, partial, success, error, context) {\n    if (this._adapter) {\n      this._adapter.create(this, type, partial, success, error, context);\n    } else {\n      throw new Error(\"Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`\");\n    }\n  }\n\n  /**\n   * Defines a type of resource.\n   *\n   * @since 0.2.0\n   * @param {!string|string[]} names - Name(s) of the resource.\n   * @param {!Object} definition - The resource's definition.\n   * @return {undefined} - Nothing.\n   */\n  define(names, definition) {\n    names = (names.constructor === Array) ? names : [ names ];\n    if (definition) {\n      definition._names = names;\n      names.forEach(name => {\n        if (!this._types[name]) {\n          this._types[name] = definition;\n        } else {\n          throw new Error(`The type '${name}' has already been defined.`);\n        }\n      });\n    } else {\n      throw new Error(`You must provide a definition for the type '${names[0]}'.`);\n    }\n  }\n\n  /**\n   * Attempts to delete the resource through the adapter and removes it from\n   * the store if successful.\n   *\n   * @since 0.5.0\n   * @param {!string} type - Type of resource.\n   * @param {!string} id - ID of resource.\n   * @param {function} [success] - Callback on success.\n   * @param {function} [error] - Callback on error.\n   * @param {Object} [context] - Context for the callbacks.\n   * @return {undefined} - Nothing.\n   *\n   * @example\n   * let adapter = new Store.AjaxAdapter();\n   * let store = new Store(adpater);\n   * store.destroy(\"product\", \"1\", () => {\n   *   console.log(\"Destroyed!\");\n   * });\n   */\n  destroy(type, id, success, error, context) {\n    if (this._adapter) {\n      this._adapter.destroy(this, type, id, success, error, context);\n    } else {\n      throw new Error(\"Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`\");\n    }\n  }\n\n  /**\n   * Find a resource or entire collection of resources.\n   *\n   * NOTE: If the resource hasn't been loaded via an add() or push() call it\n   * will be automatically created when find is called.\n   *\n   * @since 0.1.0\n   * @param {!string} type - Type of the resource(s) to find.\n   * @param {string} [id] - The id of the resource to find. If omitted all\n   *                        resources of the type will be returned.\n   * @return {Object|Object[]} - Either the resource or an array of resources.\n   */\n  find(type, id) {\n    if (type) {\n      let definition = this._types[type];\n      if (definition) {\n        if (!this._data[type]) {\n          let collection = {};\n          definition._names.forEach(t => this._data[t] = collection);\n        }\n        if (id) {\n          if (!this._data[type][id]) {\n            this._data[type][id] = {\n              _dependents: [],\n              type: type,\n              id: id\n            };\n            Object.keys(definition).forEach(key => {\n              if (key[0] !== \"_\") {\n                this._data[type][id][key] = definition[key].default;\n              }\n            });\n          }\n          return this._data[type][id];\n        } else {\n          return Object.keys(this._data[type]).map(x => this._data[type][x]);\n        }\n      } else {\n        throw new TypeError(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new TypeError(`You must provide a type`);\n    }\n  }\n\n  /**\n   * Attempts to load the resource(s) through the adapter and adds it/them to\n   * the store if successful.\n   *\n   * @since 0.5.0\n   * @param {!string} type - Type of resource.\n   * @param {!string} [id] - ID of resource.\n   * @param {Object} [options] - **NOT YET IMPLEMENTED** (this will include sorting, filtering and pagination options)\n   * @param {function} [success] - Callback on success.\n   * @param {function} [error] - Callback on error.\n   * @param {Object} [context] - Context for the callbacks.\n   * @return {undefined} - Nothing.\n   *\n   * @example\n   * let adapter = new Store.AjaxAdapter();\n   * let store = new Store(adpater);\n   * store.load(\"product\", \"1\", (product) => {\n   *   console.log(product.title);\n   * });\n   */\n  load(type, id, options, success, error, context) {\n    if (this._adapter) {\n      this._adapter.load(this, type, id, options, success, error, context);\n    } else {\n      throw new Error(\"Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`\");\n    }\n  }\n\n  /**\n   * Unregister an event listener that was registered with on().\n   *\n   * @since 0.4.0\n   * @param {string} event - Name of the event.\n   * @param {string} type - Name of resource to originally passed to on().\n   * @param {string} [id] - ID of the resource to originally passed to on().\n   * @param {function} callback - Function originally passed to on().\n   * @return {undefined} - Nothing.\n   */\n  off(event, type, id, callback) {\n    if (this._resourceListeners[event] && this._collectionListeners[event]) {\n      if (this._types[type]) {\n        if (id && ({}).toString.call(id) === '[object Function]') {\n          this.off.call(this, event, type, null, id, callback);\n        } else {\n          // TODO: Performance-wise, this can be made way better. There shouldn't be a need to maintain separate lists.\n          this._types[type]._names.forEach(type => {\n            if (id) {\n              if (this._resourceListeners[event][type] && this._resourceListeners[event][type][id]) {\n                this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id].filter(x => {\n                  return x[0] !== callback;\n                });\n              }\n            } else if (this._collectionListeners[event][type]) {\n              this._collectionListeners[event][type] = this._collectionListeners[event][type].filter(x => {\n                return x[0] !== callback;\n              });\n            }\n          });\n        }\n      } else {\n        throw new Error(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new Error(`Unknown event '${event}'`);\n    }\n  }\n\n  /**\n   * Register an event listener: \"added\", \"updated\" or \"removed\".\n   *\n   * @since 0.4.0\n   * @param {string} event - Name of the event.\n   * @param {string} type - Name of resource to watch.\n   * @param {string} [id] - ID of the resource to watch.\n   * @param {function} callback - Function to call when the event occurs.\n   * @param {Object} [context] - Context in which to call the callback.\n   * @return {undefined} - Nothing.\n   */\n  on(event, type, id, callback, context) {\n    if (this._resourceListeners[event] && this._collectionListeners[event]) {\n      if (this._types[type]) {\n        if (id && ({}).toString.call(id) === '[object Function]') {\n          this.on.call(this, event, type, null, id, callback);\n        } else {\n          // TODO: Performance-wise, this can be made way better. There shouldn't be a need to maintain separate lists.\n          this._types[type]._names.forEach(type => {\n            if (id) {\n              this._resourceListeners[event][type] = this._resourceListeners[event][type] || {};\n              this._resourceListeners[event][type][id] = this._resourceListeners[event][type][id] || [];\n              if (!this._resourceListeners[event][type][id].find(x => x[0] === callback)) {\n                this._resourceListeners[event][type][id].push([ callback, context ]);\n              }\n            } else {\n              this._collectionListeners[event][type] = this._collectionListeners[event][type] || [];\n              if (!this._collectionListeners[event][type].find(x => x[0] === callback)) {\n                this._collectionListeners[event][type].push([ callback, context ]);\n              }\n            }\n          });\n        }\n      } else {\n        throw new Error(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new Error(`Unknown event '${event}'`);\n    }\n  }\n\n  /**\n   * Add a JSON API response to the store. This method can be used to handle a\n   * successful GET or POST response from the server.\n   *\n   * @since 0.1.0\n   * @param {Object} root - Top Level Object to push. See:\n                            http://jsonapi.org/format/#document-top-level\n   * @return {undefined} - Nothing.\n   */\n  push(root) {\n    if (root.data.constructor === Array) {\n      root.data.forEach(x => this.add(x));\n    } else {\n      this.add(root.data);\n    }\n    if (root.included) {\n      root.included.forEach(x => this.add(x));\n    }\n  }\n\n  /**\n   * Remove a resource or collection of resources from the store.\n   *\n   * @since 0.1.0\n   * @param {!string} type - Type of the resource(s) to remove.\n   * @param {string} [id] - The id of the resource to remove. If omitted all\n   *                        resources of the type will be removed.\n   * @return {undefined} - Nothing.\n   */\n  remove(type, id) {\n    if (type) {\n      if (this._types[type]) {\n        if (id) {\n          let resource = this._data[type] && this._data[type][id];\n          if (resource) {\n            this._remove(resource);\n            if (this._resourceListeners[\"removed\"][type] && this._resourceListeners[\"removed\"][type][id]) {\n               this._resourceListeners[\"removed\"][type][id].forEach(x => x[0].call(x[1], resource));\n            }\n            if (this._collectionListeners[\"removed\"][type]) {\n              this._collectionListeners[\"removed\"][type].forEach(x => x[0].call(x[1], resource));\n            }\n          }\n        } else {\n          Object.keys(this._data[type]).forEach(id => this.remove(type, id));\n        }\n      } else {\n        throw new TypeError(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new TypeError(`You must provide a type to remove`);\n    }\n  }\n\n  /**\n   * Attempts to update the resource through the adapter and updates it in  the\n   * store if successful.\n   *\n   * @since 0.5.0\n   * @param {!string} type - Type of resource.\n   * @param {!string} id - ID of resource.\n   * @param {!Object} partial - Data to update the resource with.\n   * @param {function} [success] - Callback on success.\n   * @param {function} [error] - Callback on error.\n   * @param {Object} [context] - Context for the callbacks.\n   * @return {undefined} - Nothing.\n   *\n   * @example\n   * let adapter = new Store.AjaxAdapter();\n   * let store = new Store(adpater);\n   * store.update(\"product\", \"1\", { title: \"foo\" }, (product) => {\n   *   console.log(product.title);\n   * });\n   */\n  update(type, id, partial, success, error, context) {\n    if (this._adapter) {\n      this._adapter.update(this, type, id, partial, success, error, context);\n    } else {\n      throw new Error(\"Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`\");\n    }\n  }\n\n  _addField(object, resource, definition, fieldName) {\n    var field = definition[fieldName];\n    var newValue = field.deserialize.call(this, object, fieldName);\n    if (typeof newValue !== \"undefined\") {\n      if (field.type === \"has-one\") {\n        if (resource[fieldName]) {\n          this._removeInverseRelationship(resource, fieldName, resource[fieldName], field);\n        }\n        if (newValue) {\n          this._addInverseRelationship(resource, fieldName, newValue, field);\n        }\n      } else if (field.type === \"has-many\") {\n        resource[fieldName].forEach(r => {\n          if (resource[fieldName].indexOf(r) !== -1) {\n            this._removeInverseRelationship(resource, fieldName, r, field);\n          }\n        });\n        newValue.forEach(r => {\n          this._addInverseRelationship(resource, fieldName, r, field);\n        });\n      }\n      resource[fieldName] = newValue;\n    }\n  }\n\n  _addInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {\n    var targetDefinition = this._types[targetResource.type];\n    var sourceDefinition = this._types[sourceResource.type];\n    if (targetDefinition) {\n      let targetFieldName = [ sourceField.inverse ].concat(sourceDefinition._names).find(x => targetDefinition[x]);\n      let targetField = targetDefinition && targetDefinition[targetFieldName];\n      targetResource._dependents.push({ type: sourceResource.type, id: sourceResource.id, fieldName: sourceFieldName });\n      if (targetField) {\n        if (targetField.type === \"has-one\") {\n          sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });\n          targetResource[targetFieldName] = sourceResource;\n        } else if (targetField.type === \"has-many\") {\n          sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });\n          if (targetResource[targetFieldName].indexOf(sourceResource) === -1) {\n            targetResource[targetFieldName].push(sourceResource);\n          }\n        } else if (targetField.type === \"attr\") {\n          throw new Error(`The the inverse relationship for '${sourceFieldName}' is an attribute ('${targetFieldName}')`);\n        }\n      } else if (sourceField.inverse) {\n        throw new Error(`The the inverse relationship for '${sourceFieldName}' is missing ('${sourceField.inverse}')`);\n      }\n    }\n  }\n\n  _remove(resource) {\n    resource._dependents.forEach(dependent => {\n      let dependentResource = this._data[dependent.type][dependent.id];\n      switch (this._types[dependent.type][dependent.fieldName].type) {\n        case \"has-one\": {\n          dependentResource[dependent.fieldName] = null;\n          break;\n        }\n        case \"has-many\": {\n          let index = dependentResource[dependent.fieldName].indexOf(resource);\n          if (index !== -1) {\n            dependentResource[dependent.fieldName].splice(index, 1);\n          }\n          break;\n        }\n        default: {\n          break;\n        }\n      }\n      // TODO: This only needs to be run once for each dependent.\n      dependentResource._dependents = dependentResource._dependents.filter(d => {\n        return !(d.type === resource.type && d.id === resource.id);\n      });\n    });\n    delete this._data[resource.type][resource.id];\n  }\n\n  _removeInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {\n    var targetDefinition = this._types[targetResource.type];\n    var targetFieldName = sourceField.inverse || sourceResource.type;\n    var targetField = targetDefinition && targetDefinition[targetFieldName];\n    targetResource._dependents = targetResource._dependents.filter(r => {\n      return !(r.type === sourceResource.type && r.id === sourceResource.id && r.fieldName === sourceFieldName);\n    });\n    if (targetField) {\n      if (targetField.type === \"has-one\") {\n        sourceResource._dependents = sourceResource._dependents.filter(r => {\n          return !(r.type === targetResource.type && r.id === targetResource.id && r.fieldName === targetFieldName);\n        });\n        targetResource[targetFieldName] = null;\n      } else if (targetField.type === \"has-many\") {\n        sourceResource._dependents = sourceResource._dependents.filter(r => {\n          return !(r.type === targetResource.type && r.id === targetResource.id && r.fieldName === targetFieldName);\n        });\n        targetResource[targetFieldName] = targetResource[targetFieldName].filter(r => {\n          return r !== sourceResource;\n        });\n      } else if (targetField.type === \"attr\") {\n        throw new Error(`The the inverse relationship for '${sourceFieldName}' is an attribute ('${targetFieldName}')`);\n      }\n    } else if (sourceField.inverse) {\n      throw new Error(`The the inverse relationship for '${sourceFieldName}' is missing ('${sourceField.inverse}')`);\n    }\n  }\n\n}\n\nStore.AjaxAdapter = AjaxAdapter;\n"
+    "content": "import \"array.prototype.find\";\nimport Rx from \"rx-lite\";\nimport AjaxAdapter from \"./ajax-adapter\";\n\nexport default class Store {\n\n  /**\n   * Creates a field definition for an attribute.\n   *\n   * @since 0.1.0\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.default] - Default value for this field.\n   * @return {Object} - Field definition.\n   */\n  static attr(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.attr(null, name);\n    } else {\n      return {\n        type: \"attr\",\n        default: options && options.default,\n        deserialize: function (data, key) {\n          return data.attributes && data.attributes[name || key];\n        },\n        serialize: function (resource, data, key) {\n          data.attributes[name || key] = resource[key];\n        }\n      };\n    }\n  }\n\n  /**\n   * Creates a field definition for an has-one relationship.\n   *\n   * @since 0.1.0\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.inverse] - Name of the inverse relationship.\n   * @return {Object} - Field definition.\n   */\n  static hasOne(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.hasOne(null, name);\n    } else {\n      return {\n        type: \"has-one\",\n        inverse: options && options.inverse,\n        deserialize: function (data, key) {\n          name = name || key;\n          if (data.relationships && data.relationships[name]) {\n            if (data.relationships[name].data === null) {\n              return null;\n            } else if (data.relationships[name].data) {\n              return this.find(data.relationships[name].data.type, data.relationships[name].data.id);\n            }\n          }\n        },\n        serialize: function serialize(resource, data, key) {\n          if (resource[key] === null) {\n            data.relationships[name || key] = null;\n          } else if (resource[key]) {\n            data.relationships[name || key] = {\n              data: {\n                type: resource[key].type,\n                id: resource[key].id\n              }\n            };\n          }\n        }\n      };\n    }\n  }\n\n  /**\n   * Creates a field definition for an has-many relationship.\n   *\n   * @since 0.1.0\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.inverse] - Name of the inverse relationship.\n   * @return {Object} - Field definition.\n   */\n  static hasMany(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.hasMany(null, name);\n    } else {\n      return {\n        type: \"has-many\",\n        default: [],\n        inverse: options && options.inverse,\n        deserialize: function (data, key) {\n          name = name || key;\n          if (data.relationships && data.relationships[name]) {\n            if (data.relationships[name].data === null) {\n              return [];\n            } else if (data.relationships[name].data) {\n              return data.relationships[name].data.map((c) => {\n                return this.find(c.type, c.id);\n              });\n            }\n          }\n        },\n        serialize: function serialize(resource, data, key) {\n          if (resource[key]) {\n            data.relationships[name || key] = {\n              data: resource[key].map(x => {\n                return { type: x.type, id: x.id };\n              })\n            };\n          }\n        }\n      };\n    }\n  }\n\n  constructor(adapter) {\n\n    this._adapter = adapter;\n    this._data = {};\n    this._subject = new Rx.Subject();\n    this._subscriptions = {};\n    this._types = {};\n\n    /**\n     * An observable that will emit events when any resource in added, updated\n     * or removed. The object passed to listeners will be in this format:\n     *\n     * <p><pre class=\"source-code\">\n     * { name: string, type: string, id: string, resource: object }\n     * </pre></p>\n     *\n     * You can learn more about RxJS observables at the GitHub repo:\n     * https://github.com/Reactive-Extensions/RxJS\n     *\n     * @type {Rx.Observable}\n     * @since 0.6.0\n     *\n     * @example\n     * let store = new Store();\n     *\n     * store.observable.filter(e => e.name === \"added\").subscribe(event => {\n     *   console.log(event.name); // \"added\"\n     *   console.log(event.type); // \"products\"\n     *   console.log(event.id); // \"1\"\n     *   console.log(event.resource); // Map {...}\n     * });\n     *\n     * store.observable.filter(e => e.name === \"updated\").subscribe(event => {\n     *   console.log(event.name); // \"updated\"\n     *   console.log(event.type); // \"products\"\n     *   console.log(event.id); // \"1\"\n     *   console.log(event.resource); // Map {...}\n     * });\n     *\n     * store.observable.filter(e => e.name === \"removed\").subscribe(event => {\n     *   console.log(event.name); // \"removed\"\n     *   console.log(event.type); // \"products\"\n     *   console.log(event.id); // \"1\"\n     *   console.log(event.resource); // null\n     * });\n     */\n    this.observable = this._subject.asObservable();\n\n  }\n\n  /**\n   * Add an individual resource to the store. This is used internally by the\n   * `push()` method.\n   *\n   * @since 0.1.0\n   * @param {!Object} object - A JSON API Resource Object to be added. See:\n            http://jsonapi.org/format/#document-resource-objects\n   */\n  add(object) {\n    if (object) {\n      if (object.type && object.id) {\n        let name = this._data[object.type] && this._data[object.type][object.id] ? \"updated\" : \"added\";\n        let resource = this.find(object.type, object.id);\n        let definition = this._types[object.type];\n        Object.keys(definition).forEach(fieldName => {\n          if (fieldName[0] !== \"_\") {\n            this._addField(object, resource, definition, fieldName);\n          }\n        });\n        this._subject.onNext({\n          name: name,\n          type: object.type,\n          id: object.id,\n          resource: resource\n        });\n      } else {\n        throw new TypeError(`The data must have a type and id`);\n      }\n    } else {\n      throw new TypeError(`You must provide data to add`);\n    }\n  }\n\n  /**\n   * Converts the given partial into a JSON API compliant representation.\n   *\n   * @since 0.5.0\n   * @param {!string} [type] - The type of the resource. This can be omitted if the partial includes a type property.\n   * @param {!string} [id] - The id of the resource. This can be omitted if the partial includes an id property.\n   * @param {!object} partial - The data to convert.\n   * @return {object} - JSON API version of the object.\n   */\n  convert(type, id, partial) {\n    if (type && typeof type === \"object\") {\n      return this.convert(type.type, type.id, type);\n    } else if (id && typeof id === \"object\") {\n      return this.convert(type, id.id, id);\n    } else {\n      let data = {\n        type: type,\n        attributes: {},\n        relationships: {}\n      };\n      if (id) {\n        data.id = id;\n      }\n      let definition = this._types[data.type];\n      Object.keys(definition).forEach(fieldName => {\n        if (fieldName[0] !== \"_\") {\n          definition[fieldName].serialize(partial, data, fieldName);\n        }\n      });\n      return data;\n    }\n  }\n\n  /**\n   * Attempts to create the resource through the adapter and adds it to  the\n   * store if successful.\n   *\n   * @since 0.5.0\n   * @param {!string} type - Type of resource.\n   * @param {!Object} partial - Data to create the resource with.\n   * @param {function} [success] - Callback on success.\n   * @param {function} [error] - Callback on error.\n   * @param {Object} [context] - Context for the callbacks.\n   *\n   * @example\n   * let adapter = new Store.AjaxAdapter();\n   * let store = new Store(adpater);\n   * store.create(\"product\", { title: \"A Book\" }, (product) => {\n   *   console.log(product.title);\n   * });\n   */\n  create(type, partial, success, error, context) {\n    if (this._adapter) {\n      this._adapter.create(this, type, partial, success, error, context);\n    } else {\n      throw new Error(\"Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`\");\n    }\n  }\n\n  /**\n   * Defines a type of resource.\n   *\n   * @since 0.2.0\n   * @param {!string|string[]} names - Name(s) of the resource.\n   * @param {!Object} definition - The resource's definition.\n   */\n  define(names, definition) {\n    names = (names.constructor === Array) ? names : [ names ];\n    if (definition) {\n      definition._names = names;\n      names.forEach(name => {\n        if (!this._types[name]) {\n          this._types[name] = definition;\n        } else {\n          throw new Error(`The type '${name}' has already been defined.`);\n        }\n      });\n    } else {\n      throw new Error(`You must provide a definition for the type '${names[0]}'.`);\n    }\n  }\n\n  /**\n   * Attempts to delete the resource through the adapter and removes it from\n   * the store if successful.\n   *\n   * @since 0.5.0\n   * @param {!string} type - Type of resource.\n   * @param {!string} id - ID of resource.\n   * @param {function} [success] - Callback on success.\n   * @param {function} [error] - Callback on error.\n   * @param {Object} [context] - Context for the callbacks.\n   *\n   * @example\n   * let adapter = new Store.AjaxAdapter();\n   * let store = new Store(adpater);\n   * store.destroy(\"product\", \"1\", () => {\n   *   console.log(\"Destroyed!\");\n   * });\n   */\n  destroy(type, id, success, error, context) {\n    if (this._adapter) {\n      this._adapter.destroy(this, type, id, success, error, context);\n    } else {\n      throw new Error(\"Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`\");\n    }\n  }\n\n  /**\n   * Find a resource or entire collection of resources.\n   *\n   * NOTE: If the resource hasn't been loaded via an add() or push() call it\n   * will be automatically created when find is called.\n   *\n   * @since 0.1.0\n   * @param {!string} type - Type of the resource(s) to find.\n   * @param {string} [id] - The id of the resource to find. If omitted all\n   *                        resources of the type will be returned.\n   * @return {Object|Object[]} - Either the resource or an array of resources.\n   */\n  find(type, id) {\n    if (type) {\n      let definition = this._types[type];\n      if (definition) {\n        if (!this._data[type]) {\n          let collection = {};\n          definition._names.forEach(t => this._data[t] = collection);\n        }\n        if (id) {\n          if (!this._data[type][id]) {\n            this._data[type][id] = {\n              _dependents: [],\n              type: type,\n              id: id\n            };\n            Object.keys(definition).forEach(key => {\n              if (key[0] !== \"_\") {\n                this._data[type][id][key] = definition[key].default;\n              }\n            });\n          }\n          return this._data[type][id];\n        } else {\n          return Object.keys(this._data[type]).map(x => this._data[type][x]);\n        }\n      } else {\n        throw new TypeError(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new TypeError(`You must provide a type`);\n    }\n  }\n\n  /**\n   * Attempts to load the resource(s) through the adapter and adds it/them to\n   * the store if successful.\n   *\n   * @since 0.5.0\n   * @param {!string} type - Type of resource.\n   * @param {!string} [id] - ID of resource.\n   * @param {Object} [options] - **NOT YET IMPLEMENTED** (this will include sorting, filtering and pagination options)\n   * @param {function} [success] - Callback on success.\n   * @param {function} [error] - Callback on error.\n   * @param {Object} [context] - Context for the callbacks.\n   *\n   * @example\n   * let adapter = new Store.AjaxAdapter();\n   * let store = new Store(adpater);\n   * store.load(\"product\", \"1\", (product) => {\n   *   console.log(product.title);\n   * });\n   */\n  load(type, id, options, success, error, context) {\n    if (this._adapter) {\n      this._adapter.load(this, type, id, options, success, error, context);\n    } else {\n      throw new Error(\"Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`\");\n    }\n  }\n\n  /**\n   * Unregister an event listener that was registered with on().\n   *\n   * @deprecated Use the <code>store.observable</code> property instead of this.\n   * @since 0.4.0\n   * @param {string} event - Name of the event.\n   * @param {string} type - Name of resource to originally passed to on().\n   * @param {string} [id] - ID of the resource to originally passed to on().\n   * @param {function} callback - Function originally passed to on().\n   */\n  off(event, type, id, callback) {\n    if (event === \"added\" || event === \"updated\" || event === \"removed\") {\n      if (this._types[type]) {\n        if (id && ({}).toString.call(id) === '[object Function]') {\n          this.off.call(this, event, type, null, id, callback);\n        } else if (this._subscriptions[event] && this._subscriptions[event][type] && this._subscriptions[event][type][id || \"*\"]) {\n          this._subscriptions[event][type][id || \"*\"].dispose();\n          delete this._subscriptions[event][type][id || \"*\"];\n        }\n      } else {\n        throw new Error(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new Error(`Unknown event '${event}'`);\n    }\n  }\n\n  /**\n   * Register an event listener: \"added\", \"updated\" or \"removed\".\n   *\n   * @deprecated Use the <code>store.observable</code> property instead of this.\n   * @since 0.4.0\n   * @param {string} event - Name of the event.\n   * @param {string} type - Name of resource to watch.\n   * @param {string} [id] - ID of the resource to watch.\n   * @param {function} callback - Function to call when the event occurs.\n   * @param {Object} [context] - Context in which to call the callback.\n   */\n  on(event, type, id, callback, context) {\n    if (event === \"added\" || event === \"updated\" || event === \"removed\") {\n      if (this._types[type]) {\n        if (id && ({}).toString.call(id) === '[object Function]') {\n          this.on.call(this, event, type, null, id, callback);\n        } else if (!this._subscriptions[event] || !this._subscriptions[event][type] || !this._subscriptions[event][type][id || \"*\"]) {\n          let subscription = this._subject.filter(e => e.name === event);\n          subscription = subscription.filter(e => this._types[type]._names.indexOf(e.type) !== -1);\n          if (id) {\n            subscription = subscription.filter(e => e.id === id);\n          }\n          subscription = subscription.map(e => this.find(e.type, e.id));\n          this._subscriptions[event] = this._subscriptions[event] || {};\n          if (!this._subscriptions[event][type]) {\n            let obj = {};\n            this._types[type]._names.forEach(type => {\n              this._subscriptions[event][type] = obj;\n            });\n          }\n          this._subscriptions[event][type][id || \"*\"] = subscription.subscribe(callback.bind(context));\n        }\n      } else {\n        throw new Error(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new Error(`Unknown event '${event}'`);\n    }\n  }\n\n  /**\n   * Add a JSON API response to the store. This method can be used to handle a\n   * successful GET or POST response from the server.\n   *\n   * @since 0.1.0\n   * @param {Object} root - Top Level Object to push. See:\n                            http://jsonapi.org/format/#document-top-level\n   */\n  push(root) {\n    if (root.data.constructor === Array) {\n      root.data.forEach(x => this.add(x));\n    } else {\n      this.add(root.data);\n    }\n    if (root.included) {\n      root.included.forEach(x => this.add(x));\n    }\n  }\n\n  /**\n   * Remove a resource or collection of resources from the store.\n   *\n   * @since 0.1.0\n   * @param {!string} type - Type of the resource(s) to remove.\n   * @param {string} [id] - The id of the resource to remove. If omitted all\n   *                        resources of the type will be removed.\n   */\n  remove(type, id) {\n    if (type) {\n      if (this._types[type]) {\n        if (id) {\n          let resource = this._data[type] && this._data[type][id];\n          if (resource) {\n            this._remove(resource);\n            this._subject.onNext({\n              name: \"removed\",\n              type: type,\n              id: id,\n              resource: null\n            });\n          }\n        } else {\n          Object.keys(this._data[type]).forEach(id => this.remove(type, id));\n        }\n      } else {\n        throw new TypeError(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new TypeError(`You must provide a type to remove`);\n    }\n  }\n\n  /**\n   * Attempts to update the resource through the adapter and updates it in  the\n   * store if successful.\n   *\n   * @since 0.5.0\n   * @param {!string} type - Type of resource.\n   * @param {!string} id - ID of resource.\n   * @param {!Object} partial - Data to update the resource with.\n   * @param {function} [success] - Callback on success.\n   * @param {function} [error] - Callback on error.\n   * @param {Object} [context] - Context for the callbacks.\n   *\n   * @example\n   * let adapter = new Store.AjaxAdapter();\n   * let store = new Store(adpater);\n   * store.update(\"product\", \"1\", { title: \"foo\" }, (product) => {\n   *   console.log(product.title);\n   * });\n   */\n  update(type, id, partial, success, error, context) {\n    if (this._adapter) {\n      this._adapter.update(this, type, id, partial, success, error, context);\n    } else {\n      throw new Error(\"Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`\");\n    }\n  }\n\n  _addField(object, resource, definition, fieldName) {\n    var field = definition[fieldName];\n    var newValue = field.deserialize.call(this, object, fieldName);\n    if (typeof newValue !== \"undefined\") {\n      if (field.type === \"has-one\") {\n        if (resource[fieldName]) {\n          this._removeInverseRelationship(resource, fieldName, resource[fieldName], field);\n        }\n        if (newValue) {\n          this._addInverseRelationship(resource, fieldName, newValue, field);\n        }\n      } else if (field.type === \"has-many\") {\n        resource[fieldName].forEach(r => {\n          if (resource[fieldName].indexOf(r) !== -1) {\n            this._removeInverseRelationship(resource, fieldName, r, field);\n          }\n        });\n        newValue.forEach(r => {\n          this._addInverseRelationship(resource, fieldName, r, field);\n        });\n      }\n      resource[fieldName] = newValue;\n    }\n  }\n\n  _addInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {\n    var targetDefinition = this._types[targetResource.type];\n    var sourceDefinition = this._types[sourceResource.type];\n    if (targetDefinition) {\n      let targetFieldName = [ sourceField.inverse ].concat(sourceDefinition._names).find(x => targetDefinition[x]);\n      let targetField = targetDefinition && targetDefinition[targetFieldName];\n      targetResource._dependents.push({ type: sourceResource.type, id: sourceResource.id, fieldName: sourceFieldName });\n      if (targetField) {\n        if (targetField.type === \"has-one\") {\n          sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });\n          targetResource[targetFieldName] = sourceResource;\n        } else if (targetField.type === \"has-many\") {\n          sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });\n          if (targetResource[targetFieldName].indexOf(sourceResource) === -1) {\n            targetResource[targetFieldName].push(sourceResource);\n          }\n        } else if (targetField.type === \"attr\") {\n          throw new Error(`The the inverse relationship for '${sourceFieldName}' is an attribute ('${targetFieldName}')`);\n        }\n      } else if (sourceField.inverse) {\n        throw new Error(`The the inverse relationship for '${sourceFieldName}' is missing ('${sourceField.inverse}')`);\n      }\n    }\n  }\n\n  _remove(resource) {\n    resource._dependents.forEach(dependent => {\n      let dependentResource = this._data[dependent.type][dependent.id];\n      switch (this._types[dependent.type][dependent.fieldName].type) {\n        case \"has-one\": {\n          dependentResource[dependent.fieldName] = null;\n          break;\n        }\n        case \"has-many\": {\n          let index = dependentResource[dependent.fieldName].indexOf(resource);\n          if (index !== -1) {\n            dependentResource[dependent.fieldName].splice(index, 1);\n          }\n          break;\n        }\n        default: {\n          break;\n        }\n      }\n      // TODO: This only needs to be run once for each dependent.\n      dependentResource._dependents = dependentResource._dependents.filter(d => {\n        return !(d.type === resource.type && d.id === resource.id);\n      });\n    });\n    delete this._data[resource.type][resource.id];\n  }\n\n  _removeInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {\n    var targetDefinition = this._types[targetResource.type];\n    var targetFieldName = sourceField.inverse || sourceResource.type;\n    var targetField = targetDefinition && targetDefinition[targetFieldName];\n    targetResource._dependents = targetResource._dependents.filter(r => {\n      return !(r.type === sourceResource.type && r.id === sourceResource.id && r.fieldName === sourceFieldName);\n    });\n    if (targetField) {\n      if (targetField.type === \"has-one\") {\n        sourceResource._dependents = sourceResource._dependents.filter(r => {\n          return !(r.type === targetResource.type && r.id === targetResource.id && r.fieldName === targetFieldName);\n        });\n        targetResource[targetFieldName] = null;\n      } else if (targetField.type === \"has-many\") {\n        sourceResource._dependents = sourceResource._dependents.filter(r => {\n          return !(r.type === targetResource.type && r.id === targetResource.id && r.fieldName === targetFieldName);\n        });\n        targetResource[targetFieldName] = targetResource[targetFieldName].filter(r => {\n          return r !== sourceResource;\n        });\n      } else if (targetField.type === \"attr\") {\n        throw new Error(`The the inverse relationship for '${sourceFieldName}' is an attribute ('${targetFieldName}')`);\n      }\n    } else if (sourceField.inverse) {\n      throw new Error(`The the inverse relationship for '${sourceFieldName}' is missing ('${sourceField.inverse}')`);\n    }\n  }\n\n}\n\nStore.AjaxAdapter = AjaxAdapter;\n"
   },
   {
     "kind": "class",
@@ -305,7 +305,7 @@
     "importPath": "json-api-store/src/store.js",
     "importStyle": "Store",
     "description": null,
-    "lineNumber": 4,
+    "lineNumber": 5,
     "undocument": true,
     "interface": false
   },
@@ -318,7 +318,7 @@
     "longname": "src/store.js~Store.attr",
     "access": null,
     "description": "Creates a field definition for an attribute.",
-    "lineNumber": 15,
+    "lineNumber": 16,
     "since": "0.1.0",
     "params": [
       {
@@ -371,7 +371,7 @@
     "longname": "src/store.js~Store.hasOne",
     "access": null,
     "description": "Creates a field definition for an has-one relationship.",
-    "lineNumber": 41,
+    "lineNumber": 42,
     "since": "0.1.0",
     "params": [
       {
@@ -424,7 +424,7 @@
     "longname": "src/store.js~Store.hasMany",
     "access": null,
     "description": "Creates a field definition for an has-many relationship.",
-    "lineNumber": 83,
+    "lineNumber": 84,
     "since": "0.1.0",
     "params": [
       {
@@ -477,7 +477,7 @@
     "longname": "src/store.js~Store#constructor",
     "access": null,
     "description": null,
-    "lineNumber": 116,
+    "lineNumber": 117,
     "undocument": true,
     "params": [
       {
@@ -498,24 +498,7 @@
     "longname": "src/store.js~Store#_adapter",
     "access": null,
     "description": null,
-    "lineNumber": 117,
-    "undocument": true,
-    "type": {
-      "types": [
-        "*"
-      ]
-    }
-  },
-  {
-    "kind": "member",
-    "static": false,
-    "variation": null,
-    "name": "_collectionListeners",
-    "memberof": "src/store.js~Store",
-    "longname": "src/store.js~Store#_collectionListeners",
-    "access": null,
-    "description": null,
-    "lineNumber": 118,
+    "lineNumber": 119,
     "undocument": true,
     "type": {
       "types": [
@@ -532,7 +515,7 @@
     "longname": "src/store.js~Store#_data",
     "access": null,
     "description": null,
-    "lineNumber": 119,
+    "lineNumber": 120,
     "undocument": true,
     "type": {
       "types": [
@@ -544,12 +527,29 @@
     "kind": "member",
     "static": false,
     "variation": null,
-    "name": "_resourceListeners",
+    "name": "_subject",
     "memberof": "src/store.js~Store",
-    "longname": "src/store.js~Store#_resourceListeners",
+    "longname": "src/store.js~Store#_subject",
     "access": null,
     "description": null,
-    "lineNumber": 120,
+    "lineNumber": 121,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_subscriptions",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#_subscriptions",
+    "access": null,
+    "description": null,
+    "lineNumber": 122,
     "undocument": true,
     "type": {
       "types": [
@@ -566,12 +566,35 @@
     "longname": "src/store.js~Store#_types",
     "access": null,
     "description": null,
-    "lineNumber": 121,
+    "lineNumber": 123,
     "undocument": true,
     "type": {
       "types": [
         "*"
       ]
+    }
+  },
+  {
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "observable",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#observable",
+    "access": null,
+    "description": "An observable that will emit events when any resource in added, updated\nor removed. The object passed to listeners will be in this format:\n\n<p><pre class=\"source-code\">\n{ name: string, type: string, id: string, resource: object }\n</pre></p>\n\nYou can learn more about RxJS observables at the GitHub repo:\nhttps://github.com/Reactive-Extensions/RxJS",
+    "examples": [
+      "let store = new Store();\n\nstore.observable.filter(e => e.name === \"added\").subscribe(event => {\n  console.log(event.name); // \"added\"\n  console.log(event.type); // \"products\"\n  console.log(event.id); // \"1\"\n  console.log(event.resource); // Map {...}\n});\n\nstore.observable.filter(e => e.name === \"updated\").subscribe(event => {\n  console.log(event.name); // \"updated\"\n  console.log(event.type); // \"products\"\n  console.log(event.id); // \"1\"\n  console.log(event.resource); // Map {...}\n});\n\nstore.observable.filter(e => e.name === \"removed\").subscribe(event => {\n  console.log(event.name); // \"removed\"\n  console.log(event.type); // \"products\"\n  console.log(event.id); // \"1\"\n  console.log(event.resource); // null\n});"
+    ],
+    "lineNumber": 163,
+    "since": "0.6.0",
+    "type": {
+      "nullable": null,
+      "types": [
+        "Rx.Observable"
+      ],
+      "spread": false,
+      "description": null
     }
   },
   {
@@ -583,7 +606,7 @@
     "longname": "src/store.js~Store#add",
     "access": null,
     "description": "Add an individual resource to the store. This is used internally by the\n`push()` method.",
-    "lineNumber": 133,
+    "lineNumber": 175,
     "since": "0.1.0",
     "params": [
       {
@@ -594,17 +617,9 @@
         "spread": false,
         "optional": false,
         "name": "object",
-        "description": "Resource Object to add. See:\n           http://jsonapi.org/format/#document-resource-objects"
+        "description": "A JSON API Resource Object to be added. See:\n           http://jsonapi.org/format/#document-resource-objects"
       }
     ],
-    "return": {
-      "nullable": null,
-      "types": [
-        "undefined"
-      ],
-      "spread": false,
-      "description": "Nothing."
-    },
     "generator": false
   },
   {
@@ -616,7 +631,7 @@
     "longname": "src/store.js~Store#convert",
     "access": null,
     "description": "Converts the given partial into a JSON API compliant representation.",
-    "lineNumber": 167,
+    "lineNumber": 209,
     "since": "0.5.0",
     "params": [
       {
@@ -672,7 +687,7 @@
     "examples": [
       "let adapter = new Store.AjaxAdapter();\nlet store = new Store(adpater);\nstore.create(\"product\", { title: \"A Book\" }, (product) => {\n  console.log(product.title);\n});"
     ],
-    "lineNumber": 210,
+    "lineNumber": 251,
     "since": "0.5.0",
     "params": [
       {
@@ -726,14 +741,6 @@
         "description": "Context for the callbacks."
       }
     ],
-    "return": {
-      "nullable": null,
-      "types": [
-        "undefined"
-      ],
-      "spread": false,
-      "description": "Nothing."
-    },
     "generator": false
   },
   {
@@ -745,7 +752,7 @@
     "longname": "src/store.js~Store#define",
     "access": null,
     "description": "Defines a type of resource.",
-    "lineNumber": 226,
+    "lineNumber": 266,
     "since": "0.2.0",
     "params": [
       {
@@ -770,14 +777,6 @@
         "description": "The resource's definition."
       }
     ],
-    "return": {
-      "nullable": null,
-      "types": [
-        "undefined"
-      ],
-      "spread": false,
-      "description": "Nothing."
-    },
     "generator": false
   },
   {
@@ -792,7 +791,7 @@
     "examples": [
       "let adapter = new Store.AjaxAdapter();\nlet store = new Store(adpater);\nstore.destroy(\"product\", \"1\", () => {\n  console.log(\"Destroyed!\");\n});"
     ],
-    "lineNumber": 261,
+    "lineNumber": 300,
     "since": "0.5.0",
     "params": [
       {
@@ -846,14 +845,6 @@
         "description": "Context for the callbacks."
       }
     ],
-    "return": {
-      "nullable": null,
-      "types": [
-        "undefined"
-      ],
-      "spread": false,
-      "description": "Nothing."
-    },
     "generator": false
   },
   {
@@ -865,7 +856,7 @@
     "longname": "src/store.js~Store#find",
     "access": null,
     "description": "Find a resource or entire collection of resources.\n\nNOTE: If the resource hasn't been loaded via an add() or push() call it\nwill be automatically created when find is called.",
-    "lineNumber": 281,
+    "lineNumber": 320,
     "since": "0.1.0",
     "params": [
       {
@@ -912,7 +903,7 @@
     "examples": [
       "let adapter = new Store.AjaxAdapter();\nlet store = new Store(adpater);\nstore.load(\"product\", \"1\", (product) => {\n  console.log(product.title);\n});"
     ],
-    "lineNumber": 334,
+    "lineNumber": 372,
     "since": "0.5.0",
     "params": [
       {
@@ -976,14 +967,6 @@
         "description": "Context for the callbacks."
       }
     ],
-    "return": {
-      "nullable": null,
-      "types": [
-        "undefined"
-      ],
-      "spread": false,
-      "description": "Nothing."
-    },
     "generator": false
   },
   {
@@ -995,7 +978,8 @@
     "longname": "src/store.js~Store#off",
     "access": null,
     "description": "Unregister an event listener that was registered with on().",
-    "lineNumber": 352,
+    "lineNumber": 390,
+    "deprecated": "Use the <code>store.observable</code> property instead of this.",
     "since": "0.4.0",
     "params": [
       {
@@ -1039,14 +1023,6 @@
         "description": "Function originally passed to on()."
       }
     ],
-    "return": {
-      "nullable": null,
-      "types": [
-        "undefined"
-      ],
-      "spread": false,
-      "description": "Nothing."
-    },
     "generator": false
   },
   {
@@ -1058,7 +1034,8 @@
     "longname": "src/store.js~Store#on",
     "access": null,
     "description": "Register an event listener: \"added\", \"updated\" or \"removed\".",
-    "lineNumber": 392,
+    "lineNumber": 418,
+    "deprecated": "Use the <code>store.observable</code> property instead of this.",
     "since": "0.4.0",
     "params": [
       {
@@ -1112,14 +1089,6 @@
         "description": "Context in which to call the callback."
       }
     ],
-    "return": {
-      "nullable": null,
-      "types": [
-        "undefined"
-      ],
-      "spread": false,
-      "description": "Nothing."
-    },
     "generator": false
   },
   {
@@ -1131,7 +1100,7 @@
     "longname": "src/store.js~Store#push",
     "access": null,
     "description": "Add a JSON API response to the store. This method can be used to handle a\nsuccessful GET or POST response from the server.",
-    "lineNumber": 431,
+    "lineNumber": 455,
     "since": "0.1.0",
     "params": [
       {
@@ -1145,14 +1114,6 @@
         "description": "Top Level Object to push. See:\n                           http://jsonapi.org/format/#document-top-level"
       }
     ],
-    "return": {
-      "nullable": null,
-      "types": [
-        "undefined"
-      ],
-      "spread": false,
-      "description": "Nothing."
-    },
     "generator": false
   },
   {
@@ -1164,7 +1125,7 @@
     "longname": "src/store.js~Store#remove",
     "access": null,
     "description": "Remove a resource or collection of resources from the store.",
-    "lineNumber": 451,
+    "lineNumber": 474,
     "since": "0.1.0",
     "params": [
       {
@@ -1188,14 +1149,6 @@
         "description": "The id of the resource to remove. If omitted all\n                       resources of the type will be removed."
       }
     ],
-    "return": {
-      "nullable": null,
-      "types": [
-        "undefined"
-      ],
-      "spread": false,
-      "description": "Nothing."
-    },
     "generator": false
   },
   {
@@ -1210,7 +1163,7 @@
     "examples": [
       "let adapter = new Store.AjaxAdapter();\nlet store = new Store(adpater);\nstore.update(\"product\", \"1\", { title: \"foo\" }, (product) => {\n  console.log(product.title);\n});"
     ],
-    "lineNumber": 496,
+    "lineNumber": 518,
     "since": "0.5.0",
     "params": [
       {
@@ -1274,14 +1227,6 @@
         "description": "Context for the callbacks."
       }
     ],
-    "return": {
-      "nullable": null,
-      "types": [
-        "undefined"
-      ],
-      "spread": false,
-      "description": "Nothing."
-    },
     "generator": false
   },
   {
@@ -1293,7 +1238,7 @@
     "longname": "src/store.js~Store#_addField",
     "access": null,
     "description": null,
-    "lineNumber": 504,
+    "lineNumber": 526,
     "undocument": true,
     "params": [
       {
@@ -1332,7 +1277,7 @@
     "longname": "src/store.js~Store#_addInverseRelationship",
     "access": null,
     "description": null,
-    "lineNumber": 529,
+    "lineNumber": 551,
     "undocument": true,
     "params": [
       {
@@ -1371,7 +1316,7 @@
     "longname": "src/store.js~Store#_remove",
     "access": null,
     "description": null,
-    "lineNumber": 554,
+    "lineNumber": 576,
     "undocument": true,
     "params": [
       {
@@ -1392,7 +1337,7 @@
     "longname": "src/store.js~Store#_removeInverseRelationship",
     "access": null,
     "description": null,
-    "lineNumber": 581,
+    "lineNumber": 603,
     "undocument": true,
     "params": [
       {

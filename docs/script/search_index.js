@@ -426,6 +426,12 @@ window.esdocSearchIndex = [
     "method"
   ],
   [
+    "src/store.js~store#observable",
+    "class/src/store.js~Store.html#instance-member-observable",
+    "src/store.js~Store#observable",
+    "member"
+  ],
+  [
     "src/store.js~store#off",
     "class/src/store.js~Store.html#instance-method-off",
     "src/store.js~Store#off",
