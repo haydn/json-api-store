@@ -1,8 +1,9 @@
 # JSON API Store [![Build Status](https://travis-ci.org/haydn/json-api-store.svg?branch=master)](https://travis-ci.org/haydn/json-api-store) [![NPM Version](https://badge.fury.io/js/json-api-store.svg)](http://badge.fury.io/js/json-api-store)
 
-A lightweight JavaScript library that acts as a data store and uses the
-[JSON API](http://jsonapi.org) specification. You can use it in the browser to
-easily communicate with a JSON API compliant server.
+An isomorphic JavaScript library that acts as an in memory data store for
+[JSON API](http://jsonapi.org) data. Changes are
+broadcast using [RxJS](https://github.com/Reactive-Extensions/RxJS). Built to
+work with [React](https://facebook.github.io/react/).
 
 ## Usage
 
@@ -13,7 +14,7 @@ At the moment the primary use can for JSON API Store is in the browser:
 ```javascript
 
 // Create a new store instance.
-var adapter = new Store.AjaxAdapter({ base: "http://example.com/api/v1" });
+var adapter = new Store.AjaxAdapter({ base: "/api/v1" });
 var store = new Store(adapter);
 
 // Define the "categories" type.
@@ -26,6 +27,11 @@ store.define([ "categories", "category" ], {
 store.define([ "products", "product" ], {
   title: Store.attr(),
   category: Store.hasOne()
+});
+
+// Subscribe to events using RxJS.
+store.observable.subscribe(function (event) {
+  console.log(event.name, event.type, event.id, event.resource);
 });
 
 // Load all the products.
@@ -46,11 +52,11 @@ store.load("products", { include: [ "category" ] }, function (products) {
 
 ### Node
 
-You can also use JSON API Store in a Node.js environment (adapters that work in
-a Node.js are in the works):
+You can also use JSON API Store in a Node.js environment (currently, there
+aren't any adapters that work in a Node.js):
 
-**NOTE**: Without an adapter the `create`, `load`, `update` and `destroy`
-methods cannot be used.
+**NOTE**: Without an adapter the CLUD methods (`create`, `load`, `update` and
+`destroy`) cannot be used.
 
 ```javascript
 
@@ -96,6 +102,12 @@ store.find("products", "1").category.title; // "Example Category"
 
 ```
 
+## Documentation
+
+Full documentation is available on the website:
+
+http://particlesystem.com/json-api-store/
+
 ## Installing
 
 #### NPM
@@ -113,9 +125,3 @@ bower i json-api-store
 #### Download
 
 To use directly in the browser you can grab the [store.prod.js](https://raw.githubusercontent.com/haydn/json-api-store/master/dist/store.prod.js) file.
-
-## Documentation
-
-Documentation is available on the website:
-
-http://particlesystem.com/json-api-store/
