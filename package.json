@@ -15,6 +15,7 @@
   "devDependencies": {
     "babel": "^5.8.21",
     "babelify": "^6.2.0",
+    "browser-run": "2.5.0",
     "browserify": "^11.0.1",
     "chokidar-cli": "^1.0.1",
     "esdoc": "^0.2.2",
