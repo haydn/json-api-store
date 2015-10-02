@@ -1,0 +1,2018 @@
+[
+  {
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/ajax-adapter.js",
+    "memberof": null,
+    "longname": "src/ajax-adapter.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "export default class AjaxAdapter {\n\n  constructor(options) {\n    this._base = (options && options.base) || \"\";\n  };\n\n  create(store, type, partial, success, error, context) {\n\n    if (error && {}.toString.call(error) !== '[object Function]') {\n\n      this.create(store, type, partial, success, null, error);\n\n    } else if (store._types[type]) {\n\n      let request = new XMLHttpRequest();\n\n      request.open('POST', `${this._base}/${type}`, true);\n\n      request.setRequestHeader(\"Content-Type\", \"application/vnd.api+json\");\n\n      request.onload = function () {\n        if (request.status >= 200 && request.status < 300) {\n          let response = JSON.parse(request.responseText);\n          try {\n            store.push(response);\n            if (success) {\n              success.call(context, store.find(response.data.type, response.data.id));\n            }\n          } catch (e) {\n            if (error) {\n              error.call(context, e);\n            }\n          }\n        } else {\n          if (error) {\n            error.call(context);\n          }\n        }\n      };\n\n      request.send(JSON.stringify({\n        data: store.convert(type, partial)\n      }));\n\n    } else {\n      throw new Error(`Unknown type '${type}'`);\n    }\n\n  }\n\n  destroy(store, type, id, success, error, context) {\n\n    if (error && {}.toString.call(error) !== '[object Function]') {\n\n      this.destroy(store, type, id, success, null, error);\n\n    } else if (store._types[type]) {\n\n      let request = new XMLHttpRequest();\n\n      request.open('DELETE', `${this._base}/${type}/${id}`, true);\n\n      request.setRequestHeader(\"Content-Type\", \"application/vnd.api+json\");\n\n      request.onload = function () {\n        if (request.status >= 200 && request.status < 300) {\n          try {\n            store.remove(type, id);\n            if (success) {\n              success.call(context);\n            }\n          } catch (e) {\n            error.call(context, e);\n          }\n        } else if (error) {\n          error.call(context);\n        }\n      };\n\n      request.send();\n\n    } else {\n      throw new Error(`Unknown type '${type}'`);\n    }\n\n  }\n\n  load(store, type, id, options, success, error, context) {\n\n    if (id && {}.toString.call(id) === '[object Function]') {\n      this.load(store, type, null, null, id, options, success);\n    } else if (id && typeof id === \"object\") {\n      this.load(store, type, null, id, options, success, error);\n    } else if (options && {}.toString.call(options) === '[object Function]') {\n      this.load(store, type, id, {}, options, success, error);\n    } else if (error && {}.toString.call(error) !== '[object Function]') {\n      this.load(store, type, id, options, success, null, error);\n    } else if (store._types[type]) {\n\n      let request = new XMLHttpRequest();\n      let url;\n\n      options = options || {};\n      url = id ? `${this._base}/${type}/${id}` : `${this._base}/${type}`;\n\n      if (options) {\n\n        let params = [];\n\n        if (options.fields) {\n          Object.keys(options.fields).forEach(field => {\n            options[`fields[${field}]`] = options.fields[field];\n          });\n          delete options.fields;\n        }\n\n        params = Object.keys(options).map(key => {\n          return key + \"=\" + encodeURIComponent(options[key]);\n        }).sort();\n\n        if (params.length) {\n          url = `${url}?${params.join(\"&\")}`;\n        }\n\n      }\n\n      request.open('GET', url, true);\n\n      request.setRequestHeader(\"Content-Type\", \"application/vnd.api+json\");\n\n      request.onload = function () {\n        if (request.status >= 200 && request.status < 300) {\n          try {\n            store.push(JSON.parse(request.responseText));\n            if (success) {\n              success.call(context, id ? store.find(type, id) : store.find(type));\n            }\n          } catch (e) {\n            error.call({}, e);\n          }\n        } else if (error) {\n          error.call(context);\n        }\n      };\n\n      request.send();\n\n    } else {\n      throw new Error(`Unknown type '${type}'`);\n    }\n\n  }\n\n  update(store, type, id, partial, success, error, context) {\n\n    if (error && {}.toString.call(error) !== '[object Function]') {\n\n      this.update(store, type, id, partial, success, null, error);\n\n    } else if (store._types[type]) {\n\n      let request = new XMLHttpRequest();\n      let data = store.convert(type, id, partial);\n\n      request.open('PATCH', `${this._base}/${type}/${id}`, true);\n\n      request.setRequestHeader(\"Content-Type\", \"application/vnd.api+json\");\n\n      request.onload = function () {\n        if (request.status >= 200 && request.status < 300) {\n          try {\n            store.add(data);\n            if (success) {\n              success.call(context, store.find(data.type, data.id));\n            }\n          } catch (e) {\n            if (error) {\n              error.call(context, e);\n            }\n          }\n        } else if (error) {\n          error.call(context);\n        }\n      };\n\n      request.send(JSON.stringify({\n        data: data\n      }));\n\n    } else {\n      throw new Error(`Unknown type '${type}'`);\n    }\n\n  }\n\n}\n"
+  },
+  {
+    "kind": "class",
+    "static": true,
+    "variation": null,
+    "name": "AjaxAdapter",
+    "memberof": "src/ajax-adapter.js",
+    "longname": "src/ajax-adapter.js~AjaxAdapter",
+    "access": null,
+    "export": true,
+    "importPath": "json-api-store/src/ajax-adapter.js",
+    "importStyle": "AjaxAdapter",
+    "description": null,
+    "lineNumber": 1,
+    "undocument": true,
+    "interface": false
+  },
+  {
+    "kind": "constructor",
+    "static": false,
+    "variation": null,
+    "name": "constructor",
+    "memberof": "src/ajax-adapter.js~AjaxAdapter",
+    "longname": "src/ajax-adapter.js~AjaxAdapter#constructor",
+    "access": null,
+    "description": null,
+    "lineNumber": 3,
+    "undocument": true,
+    "params": [
+      {
+        "name": "options",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_base",
+    "memberof": "src/ajax-adapter.js~AjaxAdapter",
+    "longname": "src/ajax-adapter.js~AjaxAdapter#_base",
+    "access": null,
+    "description": null,
+    "lineNumber": 4,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "create",
+    "memberof": "src/ajax-adapter.js~AjaxAdapter",
+    "longname": "src/ajax-adapter.js~AjaxAdapter#create",
+    "access": null,
+    "description": null,
+    "lineNumber": 7,
+    "undocument": true,
+    "params": [
+      {
+        "name": "store",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "type",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "partial",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "success",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "error",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "context",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "destroy",
+    "memberof": "src/ajax-adapter.js~AjaxAdapter",
+    "longname": "src/ajax-adapter.js~AjaxAdapter#destroy",
+    "access": null,
+    "description": null,
+    "lineNumber": 51,
+    "undocument": true,
+    "params": [
+      {
+        "name": "store",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "type",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "id",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "success",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "error",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "context",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "load",
+    "memberof": "src/ajax-adapter.js~AjaxAdapter",
+    "longname": "src/ajax-adapter.js~AjaxAdapter#load",
+    "access": null,
+    "description": null,
+    "lineNumber": 88,
+    "undocument": true,
+    "params": [
+      {
+        "name": "store",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "type",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "id",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "options",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "success",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "error",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "context",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "update",
+    "memberof": "src/ajax-adapter.js~AjaxAdapter",
+    "longname": "src/ajax-adapter.js~AjaxAdapter#update",
+    "access": null,
+    "description": null,
+    "lineNumber": 154,
+    "undocument": true,
+    "params": [
+      {
+        "name": "store",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "type",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "id",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "partial",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "success",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "error",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "context",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/store.js",
+    "memberof": null,
+    "longname": "src/store.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "import \"array.prototype.find\";\nimport Rx from \"rx-lite\";\nimport AjaxAdapter from \"./ajax-adapter\";\n\nexport default class Store {\n\n  /**\n   * Creates a field definition for an attribute.\n   *\n   * @since 0.1.0\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.default] - Default value for this field.\n   * @return {Object} - Field definition.\n   */\n  static attr(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.attr(null, name);\n    } else {\n      return {\n        type: \"attr\",\n        default: options && options.default,\n        deserialize: function (data, key) {\n          return data.attributes && data.attributes[name || key];\n        },\n        serialize: function (resource, data, key) {\n          data.attributes[name || key] = resource[key];\n        }\n      };\n    }\n  }\n\n  /**\n   * Creates a field definition for an has-one relationship.\n   *\n   * @since 0.1.0\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.inverse] - Name of the inverse relationship.\n   * @return {Object} - Field definition.\n   */\n  static hasOne(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.hasOne(null, name);\n    } else {\n      return {\n        type: \"has-one\",\n        inverse: options && options.inverse,\n        deserialize: function (data, key) {\n          name = name || key;\n          if (data.relationships && data.relationships[name]) {\n            if (data.relationships[name].data === null) {\n              return null;\n            } else if (data.relationships[name].data) {\n              return this.find(data.relationships[name].data.type, data.relationships[name].data.id);\n            }\n          }\n        },\n        serialize: function serialize(resource, data, key) {\n          if (resource[key] === null) {\n            data.relationships[name || key] = null;\n          } else if (resource[key]) {\n            data.relationships[name || key] = {\n              data: {\n                type: resource[key].type,\n                id: resource[key].id\n              }\n            };\n          }\n        }\n      };\n    }\n  }\n\n  /**\n   * Creates a field definition for an has-many relationship.\n   *\n   * @since 0.1.0\n   * @param {string} [name] - Name of the property to map this field from.\n   * @param {Object} [options] - An options object.\n   * @param {string} [options.inverse] - Name of the inverse relationship.\n   * @return {Object} - Field definition.\n   */\n  static hasMany(name, options) {\n    if (name && typeof name === 'object') {\n      return Store.hasMany(null, name);\n    } else {\n      return {\n        type: \"has-many\",\n        default: [],\n        inverse: options && options.inverse,\n        deserialize: function (data, key) {\n          name = name || key;\n          if (data.relationships && data.relationships[name]) {\n            if (data.relationships[name].data === null) {\n              return [];\n            } else if (data.relationships[name].data) {\n              return data.relationships[name].data.map((c) => {\n                return this.find(c.type, c.id);\n              });\n            }\n          }\n        },\n        serialize: function serialize(resource, data, key) {\n          if (resource[key]) {\n            data.relationships[name || key] = {\n              data: resource[key].map(x => {\n                return { type: x.type, id: x.id };\n              })\n            };\n          }\n        }\n      };\n    }\n  }\n\n  constructor(adapter) {\n\n    this._adapter = adapter;\n    this._data = {};\n    this._subject = new Rx.Subject();\n    this._subscriptions = {};\n    this._types = {};\n\n    /**\n     * An observable that will emit events when any resource in added, updated\n     * or removed. The object passed to listeners will be in this format:\n     *\n     * <p><pre class=\"source-code\">\n     * { name: string, type: string, id: string, resource: object }\n     * </pre></p>\n     *\n     * You can learn more about RxJS observables at the GitHub repo:\n     * https://github.com/Reactive-Extensions/RxJS\n     *\n     * @type {Rx.Observable}\n     * @since 0.6.0\n     *\n     * @example\n     * let store = new Store();\n     *\n     * store.observable.filter(e => e.name === \"added\").subscribe(event => {\n     *   console.log(event.name); // \"added\"\n     *   console.log(event.type); // \"products\"\n     *   console.log(event.id); // \"1\"\n     *   console.log(event.resource); // Map {...}\n     * });\n     *\n     * store.observable.filter(e => e.name === \"updated\").subscribe(event => {\n     *   console.log(event.name); // \"updated\"\n     *   console.log(event.type); // \"products\"\n     *   console.log(event.id); // \"1\"\n     *   console.log(event.resource); // Map {...}\n     * });\n     *\n     * store.observable.filter(e => e.name === \"removed\").subscribe(event => {\n     *   console.log(event.name); // \"removed\"\n     *   console.log(event.type); // \"products\"\n     *   console.log(event.id); // \"1\"\n     *   console.log(event.resource); // null\n     * });\n     */\n    this.observable = this._subject.asObservable();\n\n  }\n\n  /**\n   * Add an individual resource to the store. This is used internally by the\n   * `push()` method.\n   *\n   * @since 0.1.0\n   * @param {!Object} object - A JSON API Resource Object to be added. See:\n            http://jsonapi.org/format/#document-resource-objects\n   */\n  add(object) {\n    if (object) {\n      if (object.type && object.id) {\n        let name = this._data[object.type] && this._data[object.type][object.id] ? \"updated\" : \"added\";\n        let resource = this.find(object.type, object.id);\n        let definition = this._types[object.type];\n        Object.keys(definition).forEach(fieldName => {\n          if (fieldName[0] !== \"_\") {\n            this._addField(object, resource, definition, fieldName);\n          }\n        });\n        this._subject.onNext({\n          name: name,\n          type: object.type,\n          id: object.id,\n          resource: resource\n        });\n      } else {\n        throw new TypeError(`The data must have a type and id`);\n      }\n    } else {\n      throw new TypeError(`You must provide data to add`);\n    }\n  }\n\n  /**\n   * Converts the given partial into a JSON API compliant representation.\n   *\n   * @since 0.5.0\n   * @param {!string} [type] - The type of the resource. This can be omitted if the partial includes a type property.\n   * @param {!string} [id] - The id of the resource. This can be omitted if the partial includes an id property.\n   * @param {!object} partial - The data to convert.\n   * @return {object} - JSON API version of the object.\n   */\n  convert(type, id, partial) {\n    if (type && typeof type === \"object\") {\n      return this.convert(type.type, type.id, type);\n    } else if (id && typeof id === \"object\") {\n      return this.convert(type, id.id, id);\n    } else {\n      let data = {\n        type: type,\n        attributes: {},\n        relationships: {}\n      };\n      if (id) {\n        data.id = id;\n      }\n      let definition = this._types[data.type];\n      Object.keys(definition).forEach(fieldName => {\n        if (fieldName[0] !== \"_\") {\n          definition[fieldName].serialize(partial, data, fieldName);\n        }\n      });\n      return data;\n    }\n  }\n\n  /**\n   * Attempts to create the resource through the adapter and adds it to  the\n   * store if successful.\n   *\n   * @since 0.5.0\n   * @param {!string} type - Type of resource.\n   * @param {!Object} partial - Data to create the resource with.\n   * @param {function} [success] - Callback on success.\n   * @param {function} [error] - Callback on error.\n   * @param {Object} [context] - Context for the callbacks.\n   *\n   * @example\n   * let adapter = new Store.AjaxAdapter();\n   * let store = new Store(adpater);\n   * store.create(\"product\", { title: \"A Book\" }, (product) => {\n   *   console.log(product.title);\n   * });\n   */\n  create(type, partial, success, error, context) {\n    if (this._adapter) {\n      this._adapter.create(this, type, partial, success, error, context);\n    } else {\n      throw new Error(\"Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`\");\n    }\n  }\n\n  /**\n   * Defines a type of resource.\n   *\n   * @since 0.2.0\n   * @param {!string|string[]} names - Name(s) of the resource.\n   * @param {!Object} definition - The resource's definition.\n   */\n  define(names, definition) {\n    names = (names.constructor === Array) ? names : [ names ];\n    if (definition) {\n      definition._names = names;\n      names.forEach(name => {\n        if (!this._types[name]) {\n          this._types[name] = definition;\n        } else {\n          throw new Error(`The type '${name}' has already been defined.`);\n        }\n      });\n    } else {\n      throw new Error(`You must provide a definition for the type '${names[0]}'.`);\n    }\n  }\n\n  /**\n   * Attempts to delete the resource through the adapter and removes it from\n   * the store if successful.\n   *\n   * @since 0.5.0\n   * @param {!string} type - Type of resource.\n   * @param {!string} id - ID of resource.\n   * @param {function} [success] - Callback on success.\n   * @param {function} [error] - Callback on error.\n   * @param {Object} [context] - Context for the callbacks.\n   *\n   * @example\n   * let adapter = new Store.AjaxAdapter();\n   * let store = new Store(adpater);\n   * store.destroy(\"product\", \"1\", () => {\n   *   console.log(\"Destroyed!\");\n   * });\n   */\n  destroy(type, id, success, error, context) {\n    if (this._adapter) {\n      this._adapter.destroy(this, type, id, success, error, context);\n    } else {\n      throw new Error(\"Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`\");\n    }\n  }\n\n  /**\n   * Find a resource or entire collection of resources.\n   *\n   * NOTE: If the resource hasn't been loaded via an add() or push() call it\n   * will be automatically created when find is called.\n   *\n   * @since 0.1.0\n   * @param {!string} type - Type of the resource(s) to find.\n   * @param {string} [id] - The id of the resource to find. If omitted all\n   *                        resources of the type will be returned.\n   * @return {Object|Object[]} - Either the resource or an array of resources.\n   */\n  find(type, id) {\n    if (type) {\n      let definition = this._types[type];\n      if (definition) {\n        if (!this._data[type]) {\n          let collection = {};\n          definition._names.forEach(t => this._data[t] = collection);\n        }\n        if (id) {\n          if (!this._data[type][id]) {\n            this._data[type][id] = {\n              _dependents: [],\n              type: type,\n              id: id\n            };\n            Object.keys(definition).forEach(key => {\n              if (key[0] !== \"_\") {\n                this._data[type][id][key] = definition[key].default;\n              }\n            });\n          }\n          return this._data[type][id];\n        } else {\n          return Object.keys(this._data[type]).map(x => this._data[type][x]);\n        }\n      } else {\n        throw new TypeError(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new TypeError(`You must provide a type`);\n    }\n  }\n\n  /**\n   * Attempts to load the resource(s) through the adapter and adds it/them to\n   * the store if successful.\n   *\n   * @since 0.5.0\n   * @param {!string} type - Type of resource.\n   * @param {!string} [id] - ID of resource.\n   * @param {Object} [options] - **NOT YET IMPLEMENTED** (this will include sorting, filtering and pagination options)\n   * @param {function} [success] - Callback on success.\n   * @param {function} [error] - Callback on error.\n   * @param {Object} [context] - Context for the callbacks.\n   *\n   * @example\n   * let adapter = new Store.AjaxAdapter();\n   * let store = new Store(adpater);\n   * store.load(\"product\", \"1\", (product) => {\n   *   console.log(product.title);\n   * });\n   */\n  load(type, id, options, success, error, context) {\n    if (this._adapter) {\n      this._adapter.load(this, type, id, options, success, error, context);\n    } else {\n      throw new Error(\"Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`\");\n    }\n  }\n\n  /**\n   * Unregister an event listener that was registered with on().\n   *\n   * @deprecated Use the <code>store.observable</code> property instead of this.\n   * @since 0.4.0\n   * @param {string} event - Name of the event.\n   * @param {string} type - Name of resource to originally passed to on().\n   * @param {string} [id] - ID of the resource to originally passed to on().\n   * @param {function} callback - Function originally passed to on().\n   */\n  off(event, type, id, callback) {\n    console.warn([\n      \"The `store.off()` method has been deprecated in favour of `store.observable`.\",\n      \"For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.6.0\"\n    ].join(\"\\n\"));\n    if (event === \"added\" || event === \"updated\" || event === \"removed\") {\n      if (this._types[type]) {\n        if (id && ({}).toString.call(id) === '[object Function]') {\n          this.off.call(this, event, type, null, id, callback);\n        } else if (this._subscriptions[event] && this._subscriptions[event][type] && this._subscriptions[event][type][id || \"*\"]) {\n          this._subscriptions[event][type][id || \"*\"].dispose();\n          delete this._subscriptions[event][type][id || \"*\"];\n        }\n      } else {\n        throw new Error(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new Error(`Unknown event '${event}'`);\n    }\n  }\n\n  /**\n   * Register an event listener: \"added\", \"updated\" or \"removed\".\n   *\n   * @deprecated Use the <code>store.observable</code> property instead of this.\n   * @since 0.4.0\n   * @param {string} event - Name of the event.\n   * @param {string} type - Name of resource to watch.\n   * @param {string} [id] - ID of the resource to watch.\n   * @param {function} callback - Function to call when the event occurs.\n   * @param {Object} [context] - Context in which to call the callback.\n   */\n  on(event, type, id, callback, context) {\n    console.warn([\n      \"The `store.on()` method has been deprecated in favour of `store.observable`.\",\n      \"For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.6.0\"\n    ].join(\"\\n\"));\n    if (event === \"added\" || event === \"updated\" || event === \"removed\") {\n      if (this._types[type]) {\n        if (id && ({}).toString.call(id) === '[object Function]') {\n          this.on.call(this, event, type, null, id, callback);\n        } else if (!this._subscriptions[event] || !this._subscriptions[event][type] || !this._subscriptions[event][type][id || \"*\"]) {\n          let subscription = this._subject.filter(e => e.name === event);\n          subscription = subscription.filter(e => this._types[type]._names.indexOf(e.type) !== -1);\n          if (id) {\n            subscription = subscription.filter(e => e.id === id);\n          }\n          subscription = subscription.map(e => this.find(e.type, e.id));\n          this._subscriptions[event] = this._subscriptions[event] || {};\n          if (!this._subscriptions[event][type]) {\n            let obj = {};\n            this._types[type]._names.forEach(type => {\n              this._subscriptions[event][type] = obj;\n            });\n          }\n          this._subscriptions[event][type][id || \"*\"] = subscription.subscribe(callback.bind(context));\n        }\n      } else {\n        throw new Error(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new Error(`Unknown event '${event}'`);\n    }\n  }\n\n  /**\n   * Add a JSON API response to the store. This method can be used to handle a\n   * successful GET or POST response from the server.\n   *\n   * @since 0.1.0\n   * @param {Object} root - Top Level Object to push. See:\n                            http://jsonapi.org/format/#document-top-level\n   */\n  push(root) {\n    if (root.data.constructor === Array) {\n      root.data.forEach(x => this.add(x));\n    } else {\n      this.add(root.data);\n    }\n    if (root.included) {\n      root.included.forEach(x => this.add(x));\n    }\n  }\n\n  /**\n   * Remove a resource or collection of resources from the store.\n   *\n   * @since 0.1.0\n   * @param {!string} type - Type of the resource(s) to remove.\n   * @param {string} [id] - The id of the resource to remove. If omitted all\n   *                        resources of the type will be removed.\n   */\n  remove(type, id) {\n    if (type) {\n      if (this._types[type]) {\n        if (id) {\n          let resource = this._data[type] && this._data[type][id];\n          if (resource) {\n            this._remove(resource);\n            this._subject.onNext({\n              name: \"removed\",\n              type: type,\n              id: id,\n              resource: null\n            });\n          }\n        } else {\n          Object.keys(this._data[type]).forEach(id => this.remove(type, id));\n        }\n      } else {\n        throw new TypeError(`Unknown type '${type}'`);\n      }\n    } else {\n      throw new TypeError(`You must provide a type to remove`);\n    }\n  }\n\n  /**\n   * Attempts to update the resource through the adapter and updates it in  the\n   * store if successful.\n   *\n   * @since 0.5.0\n   * @param {!string} type - Type of resource.\n   * @param {!string} id - ID of resource.\n   * @param {!Object} partial - Data to update the resource with.\n   * @param {function} [success] - Callback on success.\n   * @param {function} [error] - Callback on error.\n   * @param {Object} [context] - Context for the callbacks.\n   *\n   * @example\n   * let adapter = new Store.AjaxAdapter();\n   * let store = new Store(adpater);\n   * store.update(\"product\", \"1\", { title: \"foo\" }, (product) => {\n   *   console.log(product.title);\n   * });\n   */\n  update(type, id, partial, success, error, context) {\n    if (this._adapter) {\n      this._adapter.update(this, type, id, partial, success, error, context);\n    } else {\n      throw new Error(\"Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`\");\n    }\n  }\n\n  _addField(object, resource, definition, fieldName) {\n    var field = definition[fieldName];\n    var newValue = field.deserialize.call(this, object, fieldName);\n    if (typeof newValue !== \"undefined\") {\n      if (field.type === \"has-one\") {\n        if (resource[fieldName]) {\n          this._removeInverseRelationship(resource, fieldName, resource[fieldName], field);\n        }\n        if (newValue) {\n          this._addInverseRelationship(resource, fieldName, newValue, field);\n        }\n      } else if (field.type === \"has-many\") {\n        resource[fieldName].forEach(r => {\n          if (resource[fieldName].indexOf(r) !== -1) {\n            this._removeInverseRelationship(resource, fieldName, r, field);\n          }\n        });\n        newValue.forEach(r => {\n          this._addInverseRelationship(resource, fieldName, r, field);\n        });\n      }\n      resource[fieldName] = newValue;\n    }\n  }\n\n  _addInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {\n    var targetDefinition = this._types[targetResource.type];\n    var sourceDefinition = this._types[sourceResource.type];\n    if (targetDefinition) {\n      let targetFieldName = [ sourceField.inverse ].concat(sourceDefinition._names).find(x => targetDefinition[x]);\n      let targetField = targetDefinition && targetDefinition[targetFieldName];\n      targetResource._dependents.push({ type: sourceResource.type, id: sourceResource.id, fieldName: sourceFieldName });\n      if (targetField) {\n        if (targetField.type === \"has-one\") {\n          sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });\n          targetResource[targetFieldName] = sourceResource;\n        } else if (targetField.type === \"has-many\") {\n          sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });\n          if (targetResource[targetFieldName].indexOf(sourceResource) === -1) {\n            targetResource[targetFieldName].push(sourceResource);\n          }\n        } else if (targetField.type === \"attr\") {\n          throw new Error(`The the inverse relationship for '${sourceFieldName}' is an attribute ('${targetFieldName}')`);\n        }\n      } else if (sourceField.inverse) {\n        throw new Error(`The the inverse relationship for '${sourceFieldName}' is missing ('${sourceField.inverse}')`);\n      }\n    }\n  }\n\n  _remove(resource) {\n    resource._dependents.forEach(dependent => {\n      let dependentResource = this._data[dependent.type][dependent.id];\n      switch (this._types[dependent.type][dependent.fieldName].type) {\n        case \"has-one\": {\n          dependentResource[dependent.fieldName] = null;\n          break;\n        }\n        case \"has-many\": {\n          let index = dependentResource[dependent.fieldName].indexOf(resource);\n          if (index !== -1) {\n            dependentResource[dependent.fieldName].splice(index, 1);\n          }\n          break;\n        }\n        default: {\n          break;\n        }\n      }\n      // TODO: This only needs to be run once for each dependent.\n      dependentResource._dependents = dependentResource._dependents.filter(d => {\n        return !(d.type === resource.type && d.id === resource.id);\n      });\n    });\n    delete this._data[resource.type][resource.id];\n  }\n\n  _removeInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {\n    var targetDefinition = this._types[targetResource.type];\n    var targetFieldName = sourceField.inverse || sourceResource.type;\n    var targetField = targetDefinition && targetDefinition[targetFieldName];\n    targetResource._dependents = targetResource._dependents.filter(r => {\n      return !(r.type === sourceResource.type && r.id === sourceResource.id && r.fieldName === sourceFieldName);\n    });\n    if (targetField) {\n      if (targetField.type === \"has-one\") {\n        sourceResource._dependents = sourceResource._dependents.filter(r => {\n          return !(r.type === targetResource.type && r.id === targetResource.id && r.fieldName === targetFieldName);\n        });\n        targetResource[targetFieldName] = null;\n      } else if (targetField.type === \"has-many\") {\n        sourceResource._dependents = sourceResource._dependents.filter(r => {\n          return !(r.type === targetResource.type && r.id === targetResource.id && r.fieldName === targetFieldName);\n        });\n        targetResource[targetFieldName] = targetResource[targetFieldName].filter(r => {\n          return r !== sourceResource;\n        });\n      } else if (targetField.type === \"attr\") {\n        throw new Error(`The the inverse relationship for '${sourceFieldName}' is an attribute ('${targetFieldName}')`);\n      }\n    } else if (sourceField.inverse) {\n      throw new Error(`The the inverse relationship for '${sourceFieldName}' is missing ('${sourceField.inverse}')`);\n    }\n  }\n\n}\n\nStore.AjaxAdapter = AjaxAdapter;\n"
+  },
+  {
+    "kind": "class",
+    "static": true,
+    "variation": null,
+    "name": "Store",
+    "memberof": "src/store.js",
+    "longname": "src/store.js~Store",
+    "access": null,
+    "export": true,
+    "importPath": "json-api-store/src/store.js",
+    "importStyle": "Store",
+    "description": null,
+    "lineNumber": 5,
+    "undocument": true,
+    "interface": false
+  },
+  {
+    "kind": "method",
+    "static": true,
+    "variation": null,
+    "name": "attr",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store.attr",
+    "access": null,
+    "description": "Creates a field definition for an attribute.",
+    "lineNumber": 16,
+    "since": "0.1.0",
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "name",
+        "description": "Name of the property to map this field from."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "options",
+        "description": "An options object."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "options.default",
+        "description": "Default value for this field."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Object"
+      ],
+      "spread": false,
+      "description": "Field definition."
+    },
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": true,
+    "variation": null,
+    "name": "hasOne",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store.hasOne",
+    "access": null,
+    "description": "Creates a field definition for an has-one relationship.",
+    "lineNumber": 42,
+    "since": "0.1.0",
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "name",
+        "description": "Name of the property to map this field from."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "options",
+        "description": "An options object."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "options.inverse",
+        "description": "Name of the inverse relationship."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Object"
+      ],
+      "spread": false,
+      "description": "Field definition."
+    },
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": true,
+    "variation": null,
+    "name": "hasMany",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store.hasMany",
+    "access": null,
+    "description": "Creates a field definition for an has-many relationship.",
+    "lineNumber": 84,
+    "since": "0.1.0",
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "name",
+        "description": "Name of the property to map this field from."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "options",
+        "description": "An options object."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "options.inverse",
+        "description": "Name of the inverse relationship."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Object"
+      ],
+      "spread": false,
+      "description": "Field definition."
+    },
+    "generator": false
+  },
+  {
+    "kind": "constructor",
+    "static": false,
+    "variation": null,
+    "name": "constructor",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#constructor",
+    "access": null,
+    "description": null,
+    "lineNumber": 117,
+    "undocument": true,
+    "params": [
+      {
+        "name": "adapter",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_adapter",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#_adapter",
+    "access": null,
+    "description": null,
+    "lineNumber": 119,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_data",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#_data",
+    "access": null,
+    "description": null,
+    "lineNumber": 120,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_subject",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#_subject",
+    "access": null,
+    "description": null,
+    "lineNumber": 121,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_subscriptions",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#_subscriptions",
+    "access": null,
+    "description": null,
+    "lineNumber": 122,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_types",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#_types",
+    "access": null,
+    "description": null,
+    "lineNumber": 123,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "observable",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#observable",
+    "access": null,
+    "description": "An observable that will emit events when any resource in added, updated\nor removed. The object passed to listeners will be in this format:\n\n<p><pre class=\"source-code\">\n{ name: string, type: string, id: string, resource: object }\n</pre></p>\n\nYou can learn more about RxJS observables at the GitHub repo:\nhttps://github.com/Reactive-Extensions/RxJS",
+    "examples": [
+      "let store = new Store();\n\nstore.observable.filter(e => e.name === \"added\").subscribe(event => {\n  console.log(event.name); // \"added\"\n  console.log(event.type); // \"products\"\n  console.log(event.id); // \"1\"\n  console.log(event.resource); // Map {...}\n});\n\nstore.observable.filter(e => e.name === \"updated\").subscribe(event => {\n  console.log(event.name); // \"updated\"\n  console.log(event.type); // \"products\"\n  console.log(event.id); // \"1\"\n  console.log(event.resource); // Map {...}\n});\n\nstore.observable.filter(e => e.name === \"removed\").subscribe(event => {\n  console.log(event.name); // \"removed\"\n  console.log(event.type); // \"products\"\n  console.log(event.id); // \"1\"\n  console.log(event.resource); // null\n});"
+    ],
+    "lineNumber": 163,
+    "since": "0.6.0",
+    "type": {
+      "nullable": null,
+      "types": [
+        "Rx.Observable"
+      ],
+      "spread": false,
+      "description": null
+    }
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "add",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#add",
+    "access": null,
+    "description": "Add an individual resource to the store. This is used internally by the\n`push()` method.",
+    "lineNumber": 175,
+    "since": "0.1.0",
+    "params": [
+      {
+        "nullable": false,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "object",
+        "description": "A JSON API Resource Object to be added. See:\n           http://jsonapi.org/format/#document-resource-objects"
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "convert",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#convert",
+    "access": null,
+    "description": "Converts the given partial into a JSON API compliant representation.",
+    "lineNumber": 209,
+    "since": "0.5.0",
+    "params": [
+      {
+        "nullable": false,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "type",
+        "description": "The type of the resource. This can be omitted if the partial includes a type property."
+      },
+      {
+        "nullable": false,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "id",
+        "description": "The id of the resource. This can be omitted if the partial includes an id property."
+      },
+      {
+        "nullable": false,
+        "types": [
+          "object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "partial",
+        "description": "The data to convert."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "object"
+      ],
+      "spread": false,
+      "description": "JSON API version of the object."
+    },
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "create",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#create",
+    "access": null,
+    "description": "Attempts to create the resource through the adapter and adds it to  the\nstore if successful.",
+    "examples": [
+      "let adapter = new Store.AjaxAdapter();\nlet store = new Store(adpater);\nstore.create(\"product\", { title: \"A Book\" }, (product) => {\n  console.log(product.title);\n});"
+    ],
+    "lineNumber": 251,
+    "since": "0.5.0",
+    "params": [
+      {
+        "nullable": false,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "type",
+        "description": "Type of resource."
+      },
+      {
+        "nullable": false,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "partial",
+        "description": "Data to create the resource with."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "function"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "success",
+        "description": "Callback on success."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "function"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "error",
+        "description": "Callback on error."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "context",
+        "description": "Context for the callbacks."
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "define",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#define",
+    "access": null,
+    "description": "Defines a type of resource.",
+    "lineNumber": 266,
+    "since": "0.2.0",
+    "params": [
+      {
+        "nullable": false,
+        "types": [
+          "string",
+          "string[]"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "names",
+        "description": "Name(s) of the resource."
+      },
+      {
+        "nullable": false,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "definition",
+        "description": "The resource's definition."
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "destroy",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#destroy",
+    "access": null,
+    "description": "Attempts to delete the resource through the adapter and removes it from\nthe store if successful.",
+    "examples": [
+      "let adapter = new Store.AjaxAdapter();\nlet store = new Store(adpater);\nstore.destroy(\"product\", \"1\", () => {\n  console.log(\"Destroyed!\");\n});"
+    ],
+    "lineNumber": 300,
+    "since": "0.5.0",
+    "params": [
+      {
+        "nullable": false,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "type",
+        "description": "Type of resource."
+      },
+      {
+        "nullable": false,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "id",
+        "description": "ID of resource."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "function"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "success",
+        "description": "Callback on success."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "function"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "error",
+        "description": "Callback on error."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "context",
+        "description": "Context for the callbacks."
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "find",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#find",
+    "access": null,
+    "description": "Find a resource or entire collection of resources.\n\nNOTE: If the resource hasn't been loaded via an add() or push() call it\nwill be automatically created when find is called.",
+    "lineNumber": 320,
+    "since": "0.1.0",
+    "params": [
+      {
+        "nullable": false,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "type",
+        "description": "Type of the resource(s) to find."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "id",
+        "description": "The id of the resource to find. If omitted all\n                       resources of the type will be returned."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Object",
+        "Object[]"
+      ],
+      "spread": false,
+      "description": "Either the resource or an array of resources."
+    },
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "load",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#load",
+    "access": null,
+    "description": "Attempts to load the resource(s) through the adapter and adds it/them to\nthe store if successful.",
+    "examples": [
+      "let adapter = new Store.AjaxAdapter();\nlet store = new Store(adpater);\nstore.load(\"product\", \"1\", (product) => {\n  console.log(product.title);\n});"
+    ],
+    "lineNumber": 372,
+    "since": "0.5.0",
+    "params": [
+      {
+        "nullable": false,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "type",
+        "description": "Type of resource."
+      },
+      {
+        "nullable": false,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "id",
+        "description": "ID of resource."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "options",
+        "description": "**NOT YET IMPLEMENTED** (this will include sorting, filtering and pagination options)"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "function"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "success",
+        "description": "Callback on success."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "function"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "error",
+        "description": "Callback on error."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "context",
+        "description": "Context for the callbacks."
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "off",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#off",
+    "access": null,
+    "description": "Unregister an event listener that was registered with on().",
+    "lineNumber": 390,
+    "deprecated": "Use the <code>store.observable</code> property instead of this.",
+    "since": "0.4.0",
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "event",
+        "description": "Name of the event."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "type",
+        "description": "Name of resource to originally passed to on()."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "id",
+        "description": "ID of the resource to originally passed to on()."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "function"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "callback",
+        "description": "Function originally passed to on()."
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "on",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#on",
+    "access": null,
+    "description": "Register an event listener: \"added\", \"updated\" or \"removed\".",
+    "lineNumber": 422,
+    "deprecated": "Use the <code>store.observable</code> property instead of this.",
+    "since": "0.4.0",
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "event",
+        "description": "Name of the event."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "type",
+        "description": "Name of resource to watch."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "id",
+        "description": "ID of the resource to watch."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "function"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "callback",
+        "description": "Function to call when the event occurs."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "context",
+        "description": "Context in which to call the callback."
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "push",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#push",
+    "access": null,
+    "description": "Add a JSON API response to the store. This method can be used to handle a\nsuccessful GET or POST response from the server.",
+    "lineNumber": 463,
+    "since": "0.1.0",
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "root",
+        "description": "Top Level Object to push. See:\n                           http://jsonapi.org/format/#document-top-level"
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "remove",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#remove",
+    "access": null,
+    "description": "Remove a resource or collection of resources from the store.",
+    "lineNumber": 482,
+    "since": "0.1.0",
+    "params": [
+      {
+        "nullable": false,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "type",
+        "description": "Type of the resource(s) to remove."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "id",
+        "description": "The id of the resource to remove. If omitted all\n                       resources of the type will be removed."
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "update",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#update",
+    "access": null,
+    "description": "Attempts to update the resource through the adapter and updates it in  the\nstore if successful.",
+    "examples": [
+      "let adapter = new Store.AjaxAdapter();\nlet store = new Store(adpater);\nstore.update(\"product\", \"1\", { title: \"foo\" }, (product) => {\n  console.log(product.title);\n});"
+    ],
+    "lineNumber": 526,
+    "since": "0.5.0",
+    "params": [
+      {
+        "nullable": false,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "type",
+        "description": "Type of resource."
+      },
+      {
+        "nullable": false,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "id",
+        "description": "ID of resource."
+      },
+      {
+        "nullable": false,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "partial",
+        "description": "Data to update the resource with."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "function"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "success",
+        "description": "Callback on success."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "function"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "error",
+        "description": "Callback on error."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "context",
+        "description": "Context for the callbacks."
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_addField",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#_addField",
+    "access": null,
+    "description": null,
+    "lineNumber": 534,
+    "undocument": true,
+    "params": [
+      {
+        "name": "object",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "resource",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "definition",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "fieldName",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_addInverseRelationship",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#_addInverseRelationship",
+    "access": null,
+    "description": null,
+    "lineNumber": 559,
+    "undocument": true,
+    "params": [
+      {
+        "name": "sourceResource",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "sourceFieldName",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "targetResource",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "sourceField",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_remove",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#_remove",
+    "access": null,
+    "description": null,
+    "lineNumber": 584,
+    "undocument": true,
+    "params": [
+      {
+        "name": "resource",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_removeInverseRelationship",
+    "memberof": "src/store.js~Store",
+    "longname": "src/store.js~Store#_removeInverseRelationship",
+    "access": null,
+    "description": null,
+    "lineNumber": 611,
+    "undocument": true,
+    "params": [
+      {
+        "name": "sourceResource",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "sourceFieldName",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "targetResource",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "sourceField",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Infinity",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Infinity",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Infinity",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "NaN",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~NaN",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "undefined",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~undefined",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "null",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~null",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Object",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Object",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "object",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~object",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Function",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Function",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "function",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~function",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Boolean",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Boolean",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "boolean",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~boolean",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Symbol",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Symbol",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Error",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Error",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "EvalError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/EvalError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~EvalError",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "InternalError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/InternalError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~InternalError",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "RangeError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RangeError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~RangeError",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "ReferenceError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ReferenceError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~ReferenceError",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "SyntaxError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SyntaxError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~SyntaxError",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "TypeError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~TypeError",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "URIError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/URIError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~URIError",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Number",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Number",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "number",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~number",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Date",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Date",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "String",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~String",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "string",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~string",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "RegExp",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~RegExp",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int8Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int8Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int8Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint8Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint8Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint8ClampedArray",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint8ClampedArray",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int16Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int16Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int16Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint16Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint16Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int32Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint32Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Float32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Float32Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Float64Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float64Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Float64Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Map",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Map",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Set",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Set",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "WeakMap",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~WeakMap",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "WeakSet",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakSet",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~WeakSet",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "ArrayBuffer",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~ArrayBuffer",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "DataView",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~DataView",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "JSON",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~JSON",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Promise",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Promise",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Generator",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Generator",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "GeneratorFunction",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/GeneratorFunction",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~GeneratorFunction",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Reflect",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Reflect",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Proxy",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Proxy",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "CanvasRenderingContext2D",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~CanvasRenderingContext2D",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "DocumentFragment",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/DocumentFragment",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~DocumentFragment",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Element",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Element",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Element",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Event",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Event",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Event",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Node",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Node",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Node",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "NodeList",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/NodeList",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~NodeList",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "XMLHttpRequest",
+    "externalLink": "https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~XMLHttpRequest",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  }
+]

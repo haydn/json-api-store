@@ -1,0 +1,27 @@
+{
+  "coverage": "66.66%",
+  "expectCount": 24,
+  "actualCount": 16,
+  "files": {
+    "src/ajax-adapter.js": {
+      "expectCount": 6,
+      "actualCount": 0,
+      "undocumentLines": [
+        1,
+        3,
+        7,
+        51,
+        88,
+        154
+      ]
+    },
+    "src/store.js": {
+      "expectCount": 18,
+      "actualCount": 16,
+      "undocumentLines": [
+        5,
+        117
+      ]
+    }
+  }
+}
