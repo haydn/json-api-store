@@ -4,7 +4,7 @@
 
 if [ "$TARGET" = "browser" ]
 then
-  ./node_modules/.bin/browserify spec/client.js -t babelify | node_modules/.bin/tape-run -b firefox
+  ./node_modules/.bin/browserify spec/client.js -t babelify | node_modules/.bin/tape-run
   exit $?
 elif [ "$TARGET" = "node" ]
 then
