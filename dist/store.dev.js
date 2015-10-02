@@ -328,6 +328,18 @@ var Store = (function () {
                 return this.find(data.relationships[name].data.type, data.relationships[name].data.id);
               }
             }
+          },
+          serialize: function serialize(resource, data, key) {
+            if (resource[key] === null) {
+              data.relationships[name || key] = null;
+            } else if (resource[key]) {
+              data.relationships[name || key] = {
+                data: {
+                  type: resource[key].type,
+                  id: resource[key].id
+                }
+              };
+            }
           }
         };
       }
@@ -364,6 +376,15 @@ var Store = (function () {
                   return _this.find(c.type, c.id);
                 });
               }
+            }
+          },
+          serialize: function serialize(resource, data, key) {
+            if (resource[key]) {
+              data.relationships[name || key] = {
+                data: resource[key].map(function (x) {
+                  return { type: x.type, id: x.id };
+                })
+              };
             }
           }
         };

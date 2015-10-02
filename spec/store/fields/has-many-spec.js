@@ -14,6 +14,111 @@ test("hasMany must return default value as an empty array", function (t) {
   t.deepEqual(Store.hasMany().default, []);
 });
 
+test("hasMany must return a serialize function that maps a relationship to data", function (t) {
+  var store = new Store();
+  var field = Store.hasMany();
+  var resource = {
+    type: "products",
+    id: "1",
+    categories: [
+      {
+        type: "categories",
+        id: "2"
+      },
+      {
+        type: "categories",
+        id: "4"
+      }
+    ]
+  };
+  var data = {
+    "relationships": {}
+  };
+  t.plan(1);
+  store.define("categories", {});
+  store.define("products", {});
+  field.serialize.call(store, resource, data, "categories");
+  t.deepEqual(data, {
+    relationships: {
+      categories: {
+        data: [
+          {
+            type: "categories",
+            id: "2"
+          },
+          {
+            type: "categories",
+            id: "4"
+          }
+        ]
+      }
+    }
+  });
+});
+
+test("hasMany must return a serialize function that skips missing relationships", function (t) {
+  var store = new Store();
+  var field = Store.hasMany();
+  var resource = {
+    type: "products",
+    id: "1"
+  };
+  var data = {
+    "relationships": {}
+  };
+  t.plan(1);
+  store.define("categories", {});
+  store.define("products", {});
+  field.serialize.call(store, resource, data, "categories");
+  t.deepEqual(data, {
+    relationships: {}
+  });
+});
+
+// TODO: serialize function uses the name option if it's provided
+
+test("hasMany must return a serialize function that uses the name option if it's provided", function (t) {
+  var store = new Store();
+  var field = Store.hasMany("categories-x");
+  var resource = {
+    type: "products",
+    id: "1",
+    categories: [
+      {
+        type: "categories",
+        id: "2"
+      },
+      {
+        type: "categories",
+        id: "4"
+      }
+    ]
+  };
+  var data = {
+    "relationships": {}
+  };
+  t.plan(1);
+  store.define("categories", {});
+  store.define("products", {});
+  field.serialize.call(store, resource, data, "categories");
+  t.deepEqual(data, {
+    relationships: {
+      "categories-x": {
+        data: [
+          {
+            type: "categories",
+            id: "2"
+          },
+          {
+            type: "categories",
+            id: "4"
+          }
+        ]
+      }
+    }
+  });
+});
+
 test("hasMany must return a deserialize function that maps to the relation described in the data property", function (t) {
   var store = new Store();
   var field = Store.hasMany("categories");

@@ -55,6 +55,18 @@ export default class Store {
               return this.find(data.relationships[name].data.type, data.relationships[name].data.id);
             }
           }
+        },
+        serialize: function serialize(resource, data, key) {
+          if (resource[key] === null) {
+            data.relationships[name || key] = null;
+          } else if (resource[key]) {
+            data.relationships[name || key] = {
+              data: {
+                type: resource[key].type,
+                id: resource[key].id
+              }
+            };
+          }
         }
       };
     }
@@ -87,6 +99,15 @@ export default class Store {
                 return this.find(c.type, c.id);
               });
             }
+          }
+        },
+        serialize: function serialize(resource, data, key) {
+          if (resource[key]) {
+            data.relationships[name || key] = {
+              data: resource[key].map(x => {
+                return { type: x.type, id: x.id };
+              })
+            };
           }
         }
       };

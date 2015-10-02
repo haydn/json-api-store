@@ -1,6 +1,6 @@
 {
   "name": "json-api-store",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "An isomorphic JavaScript library that acts as an in memory data store for JSON API data.",
   "repository": "haydn/json-api-store",
   "main": "dist/store.js",
