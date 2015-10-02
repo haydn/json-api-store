@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../">
+  <title data-ice="title">src/ajax-adapter.js | API Document</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  
+  
+</head>
+<body class="layout-container">
+
+<header>
+  <a href="./">Home</a>
+  <a href="identifiers.html">Identifier</a>
+  <a href="source.html">Source</a>
+  
+  <a data-ice="repoURL" href="https://github.com/haydn/json-api-store" class="repo-url-github">Repository</a>
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+</header>
+
+<nav class="navigation" data-ice="nav"><div data-ice="classWrap">
+  <h2>Class</h2>
+  <ul>
+    
+  <li data-ice="classDoc"><span><a href="class/src/ajax-adapter.js~AjaxAdapter.html">AjaxAdapter</a></span></li>
+<li data-ice="classDoc"><span><a href="class/src/store.js~Store.html">Store</a></span></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">src/ajax-adapter.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">export default class AjaxAdapter {
+
+  constructor(options) {
+    this._base = (options &amp;&amp; options.base) || &quot;&quot;;
+  };
+
+  create(store, type, partial, success, error, context) {
+
+    if (error &amp;&amp; {}.toString.call(error) !== &apos;[object Function]&apos;) {
+
+      this.create(store, type, partial, success, null, error);
+
+    } else if (store._types[type]) {
+
+      let request = new XMLHttpRequest();
+
+      request.open(&apos;POST&apos;, `${this._base}/${type}`, true);
+
+      request.setRequestHeader(&quot;Content-Type&quot;, &quot;application/vnd.api+json&quot;);
+
+      request.onload = function () {
+        if (request.status &gt;= 200 &amp;&amp; request.status &lt; 300) {
+          let response = JSON.parse(request.responseText);
+          try {
+            store.push(response);
+            if (success) {
+              success.call(context, store.find(response.data.type, response.data.id));
+            }
+          } catch (e) {
+            if (error) {
+              error.call(context, e);
+            }
+          }
+        } else {
+          if (error) {
+            error.call(context);
+          }
+        }
+      };
+
+      request.send(JSON.stringify({
+        data: store.convert(type, partial)
+      }));
+
+    } else {
+      throw new Error(`Unknown type &apos;${type}&apos;`);
+    }
+
+  }
+
+  destroy(store, type, id, success, error, context) {
+
+    if (error &amp;&amp; {}.toString.call(error) !== &apos;[object Function]&apos;) {
+
+      this.destroy(store, type, id, success, null, error);
+
+    } else if (store._types[type]) {
+
+      let request = new XMLHttpRequest();
+
+      request.open(&apos;DELETE&apos;, `${this._base}/${type}/${id}`, true);
+
+      request.setRequestHeader(&quot;Content-Type&quot;, &quot;application/vnd.api+json&quot;);
+
+      request.onload = function () {
+        if (request.status &gt;= 200 &amp;&amp; request.status &lt; 300) {
+          try {
+            store.remove(type, id);
+            if (success) {
+              success.call(context);
+            }
+          } catch (e) {
+            error.call(context, e);
+          }
+        } else if (error) {
+          error.call(context);
+        }
+      };
+
+      request.send();
+
+    } else {
+      throw new Error(`Unknown type &apos;${type}&apos;`);
+    }
+
+  }
+
+  load(store, type, id, options, success, error, context) {
+
+    if (id &amp;&amp; {}.toString.call(id) === &apos;[object Function]&apos;) {
+      this.load(store, type, null, null, id, options, success);
+    } else if (id &amp;&amp; typeof id === &quot;object&quot;) {
+      this.load(store, type, null, id, options, success, error);
+    } else if (options &amp;&amp; {}.toString.call(options) === &apos;[object Function]&apos;) {
+      this.load(store, type, id, {}, options, success, error);
+    } else if (error &amp;&amp; {}.toString.call(error) !== &apos;[object Function]&apos;) {
+      this.load(store, type, id, options, success, null, error);
+    } else if (store._types[type]) {
+
+      let request = new XMLHttpRequest();
+      let url;
+
+      options = options || {};
+      url = id ? `${this._base}/${type}/${id}` : `${this._base}/${type}`;
+
+      if (options) {
+
+        let params = [];
+
+        if (options.fields) {
+          Object.keys(options.fields).forEach(field =&gt; {
+            options[`fields[${field}]`] = options.fields[field];
+          });
+          delete options.fields;
+        }
+
+        params = Object.keys(options).map(key =&gt; {
+          return key + &quot;=&quot; + encodeURIComponent(options[key]);
+        }).sort();
+
+        if (params.length) {
+          url = `${url}?${params.join(&quot;&amp;&quot;)}`;
+        }
+
+      }
+
+      request.open(&apos;GET&apos;, url, true);
+
+      request.setRequestHeader(&quot;Content-Type&quot;, &quot;application/vnd.api+json&quot;);
+
+      request.onload = function () {
+        if (request.status &gt;= 200 &amp;&amp; request.status &lt; 300) {
+          try {
+            store.push(JSON.parse(request.responseText));
+            if (success) {
+              success.call(context, id ? store.find(type, id) : store.find(type));
+            }
+          } catch (e) {
+            error.call({}, e);
+          }
+        } else if (error) {
+          error.call(context);
+        }
+      };
+
+      request.send();
+
+    } else {
+      throw new Error(`Unknown type &apos;${type}&apos;`);
+    }
+
+  }
+
+  update(store, type, id, partial, success, error, context) {
+
+    if (error &amp;&amp; {}.toString.call(error) !== &apos;[object Function]&apos;) {
+
+      this.update(store, type, id, partial, success, null, error);
+
+    } else if (store._types[type]) {
+
+      let request = new XMLHttpRequest();
+      let data = store.convert(type, id, partial);
+
+      request.open(&apos;PATCH&apos;, `${this._base}/${type}/${id}`, true);
+
+      request.setRequestHeader(&quot;Content-Type&quot;, &quot;application/vnd.api+json&quot;);
+
+      request.onload = function () {
+        if (request.status &gt;= 200 &amp;&amp; request.status &lt; 300) {
+          try {
+            store.add(data);
+            if (success) {
+              success.call(context, store.find(data.type, data.id));
+            }
+          } catch (e) {
+            if (error) {
+              error.call(context, e);
+            }
+          }
+        } else if (error) {
+          error.call(context);
+        }
+      };
+
+      request.send(JSON.stringify({
+        data: data
+      }));
+
+    } else {
+      throw new Error(`Unknown type &apos;${type}&apos;`);
+    }
+
+  }
+
+}
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.2.6)</span></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>
