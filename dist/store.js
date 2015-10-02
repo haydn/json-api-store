@@ -462,6 +462,7 @@ var Store = (function () {
   }, {
     key: "off",
     value: function off(event, type, id, callback) {
+      console.warn(["The `store.off()` method has been deprecated in favour of `store.observable`.", "For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.6.0"].join("\n"));
       if (event === "added" || event === "updated" || event === "removed") {
         if (this._types[type]) {
           if (id && ({}).toString.call(id) === '[object Function]') {
@@ -494,6 +495,7 @@ var Store = (function () {
     value: function on(event, type, id, callback, context) {
       var _this6 = this;
 
+      console.warn(["The `store.on()` method has been deprecated in favour of `store.observable`.", "For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.6.0"].join("\n"));
       if (event === "added" || event === "updated" || event === "removed") {
         if (this._types[type]) {
           if (id && ({}).toString.call(id) === '[object Function]') {
