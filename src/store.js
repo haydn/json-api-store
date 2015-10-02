@@ -388,6 +388,10 @@ export default class Store {
    * @param {function} callback - Function originally passed to on().
    */
   off(event, type, id, callback) {
+    console.warn([
+      "The `store.off()` method has been deprecated in favour of `store.observable`.",
+      "For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.6.0"
+    ].join("\n"));
     if (event === "added" || event === "updated" || event === "removed") {
       if (this._types[type]) {
         if (id && ({}).toString.call(id) === '[object Function]') {
@@ -416,6 +420,10 @@ export default class Store {
    * @param {Object} [context] - Context in which to call the callback.
    */
   on(event, type, id, callback, context) {
+    console.warn([
+      "The `store.on()` method has been deprecated in favour of `store.observable`.",
+      "For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.6.0"
+    ].join("\n"));
     if (event === "added" || event === "updated" || event === "removed") {
       if (this._types[type]) {
         if (id && ({}).toString.call(id) === '[object Function]') {
