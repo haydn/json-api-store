@@ -134,6 +134,7 @@ export default class Store {
      * https://github.com/Reactive-Extensions/RxJS
      *
      * @type {Rx.Observable}
+     * @since 0.6.0
      *
      * @example
      * let store = new Store();
@@ -168,9 +169,8 @@ export default class Store {
    * `push()` method.
    *
    * @since 0.1.0
-   * @param {!Object} object - Resource Object to add. See:
+   * @param {!Object} object - A JSON API Resource Object to be added. See:
             http://jsonapi.org/format/#document-resource-objects
-   * @return {undefined} - Nothing.
    */
   add(object) {
     if (object) {
@@ -240,7 +240,6 @@ export default class Store {
    * @param {function} [success] - Callback on success.
    * @param {function} [error] - Callback on error.
    * @param {Object} [context] - Context for the callbacks.
-   * @return {undefined} - Nothing.
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
@@ -263,7 +262,6 @@ export default class Store {
    * @since 0.2.0
    * @param {!string|string[]} names - Name(s) of the resource.
    * @param {!Object} definition - The resource's definition.
-   * @return {undefined} - Nothing.
    */
   define(names, definition) {
     names = (names.constructor === Array) ? names : [ names ];
@@ -291,7 +289,6 @@ export default class Store {
    * @param {function} [success] - Callback on success.
    * @param {function} [error] - Callback on error.
    * @param {Object} [context] - Context for the callbacks.
-   * @return {undefined} - Nothing.
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
@@ -364,7 +361,6 @@ export default class Store {
    * @param {function} [success] - Callback on success.
    * @param {function} [error] - Callback on error.
    * @param {Object} [context] - Context for the callbacks.
-   * @return {undefined} - Nothing.
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
@@ -384,12 +380,12 @@ export default class Store {
   /**
    * Unregister an event listener that was registered with on().
    *
+   * @deprecated Use the <code>store.observable</code> property instead of this.
    * @since 0.4.0
    * @param {string} event - Name of the event.
    * @param {string} type - Name of resource to originally passed to on().
    * @param {string} [id] - ID of the resource to originally passed to on().
    * @param {function} callback - Function originally passed to on().
-   * @return {undefined} - Nothing.
    */
   off(event, type, id, callback) {
     if (event === "added" || event === "updated" || event === "removed") {
@@ -411,13 +407,13 @@ export default class Store {
   /**
    * Register an event listener: "added", "updated" or "removed".
    *
+   * @deprecated Use the <code>store.observable</code> property instead of this.
    * @since 0.4.0
    * @param {string} event - Name of the event.
    * @param {string} type - Name of resource to watch.
    * @param {string} [id] - ID of the resource to watch.
    * @param {function} callback - Function to call when the event occurs.
    * @param {Object} [context] - Context in which to call the callback.
-   * @return {undefined} - Nothing.
    */
   on(event, type, id, callback, context) {
     if (event === "added" || event === "updated" || event === "removed") {
@@ -455,7 +451,6 @@ export default class Store {
    * @since 0.1.0
    * @param {Object} root - Top Level Object to push. See:
                             http://jsonapi.org/format/#document-top-level
-   * @return {undefined} - Nothing.
    */
   push(root) {
     if (root.data.constructor === Array) {
@@ -475,7 +470,6 @@ export default class Store {
    * @param {!string} type - Type of the resource(s) to remove.
    * @param {string} [id] - The id of the resource to remove. If omitted all
    *                        resources of the type will be removed.
-   * @return {undefined} - Nothing.
    */
   remove(type, id) {
     if (type) {
@@ -513,7 +507,6 @@ export default class Store {
    * @param {function} [success] - Callback on success.
    * @param {function} [error] - Callback on error.
    * @param {Object} [context] - Context for the callbacks.
-   * @return {undefined} - Nothing.
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
