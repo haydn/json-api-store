@@ -6,16 +6,13 @@ test("destroy must delete a resource from the server and remove it from the stor
   var server = sinon.fakeServer.create({ autoRespond: false });
   var adapter = new Store.AjaxAdapter();
   var store = new Store(adapter);
-  t.plan(2);
+  t.plan(3);
   t.timeoutAfter(1000);
   store.define("products", {});
-  server.respondWith("DELETE", "/products/6", [
-    204,
-    {
-      "Content-Type": "application/vnd.api+json"
-    },
-    ""
-  ]);
+  server.respondWith("DELETE", "/products/6", function (request) {
+    t.false(request.requestBody);
+    request.respond(204, { "Content-Type": "application/vnd.api+json" }, "");
+  });
   store.add({
     type: "products",
     id: "6"
@@ -171,4 +168,19 @@ test("destroy must throw an error if the type has not been defined", function (t
   t.throws(function () {
     store.destroy("products", "1");
   }, /Unknown type 'products'/);
+});
+
+test("destroy must use the correct content type header", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  t.plan(1);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  server.respondWith("DELETE", "/products/6", function (request) {
+    t.notEqual(request.requestHeaders["Content-Type"].split(";").indexOf("application/vnd.api+json"), -1);
+  });
+  store.destroy("products", "6");
+  server.respond();
+  server.restore();
 });

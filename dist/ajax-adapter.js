@@ -30,6 +30,8 @@ var AjaxAdapter = (function () {
 
           request.open('POST', _this._base + '/' + type, true);
 
+          request.setRequestHeader("Content-Type", "application/vnd.api+json");
+
           request.onload = function () {
             if (request.status >= 200 && request.status < 300) {
               var response = JSON.parse(request.responseText);
@@ -50,9 +52,9 @@ var AjaxAdapter = (function () {
             }
           };
 
-          request.send({
-            data: JSON.stringify(store.convert(type, partial))
-          });
+          request.send(JSON.stringify({
+            data: store.convert(type, partial)
+          }));
         })();
       } else {
         throw new Error('Unknown type \'' + type + '\'');
@@ -72,6 +74,8 @@ var AjaxAdapter = (function () {
           var request = new XMLHttpRequest();
 
           request.open('DELETE', _this2._base + '/' + type + '/' + id, true);
+
+          request.setRequestHeader("Content-Type", "application/vnd.api+json");
 
           request.onload = function () {
             if (request.status >= 200 && request.status < 300) {
@@ -138,6 +142,8 @@ var AjaxAdapter = (function () {
 
           request.open('GET', url, true);
 
+          request.setRequestHeader("Content-Type", "application/vnd.api+json");
+
           request.onload = function () {
             if (request.status >= 200 && request.status < 300) {
               try {
@@ -175,6 +181,8 @@ var AjaxAdapter = (function () {
 
           request.open('PATCH', _this4._base + '/' + type + '/' + id, true);
 
+          request.setRequestHeader("Content-Type", "application/vnd.api+json");
+
           request.onload = function () {
             if (request.status >= 200 && request.status < 300) {
               try {
@@ -192,9 +200,9 @@ var AjaxAdapter = (function () {
             }
           };
 
-          request.send({
-            data: JSON.stringify(data)
-          });
+          request.send(JSON.stringify({
+            data: data
+          }));
         })();
       } else {
         throw new Error('Unknown type \'' + type + '\'');

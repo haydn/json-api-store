@@ -6,18 +6,24 @@ test("update must update a resource on the server and add reflect the changes in
   var server = sinon.fakeServer.create({ autoRespond: false });
   var adapter = new Store.AjaxAdapter();
   var store = new Store(adapter);
-  t.plan(2);
+  t.plan(3);
   t.timeoutAfter(1000);
   store.define("products", {
     title: Store.attr()
   });
-  server.respondWith("PATCH", "/products/9", [
-    204,
-    {
-      "Content-Type": "application/vnd.api+json"
-    },
-    ""
-  ]);
+  server.respondWith("PATCH", "/products/9", function (request) {
+    t.deepEqual(JSON.parse(request.requestBody), {
+      data: {
+        type: "products",
+        id: "9",
+        attributes: {
+          title: "My Book!"
+        },
+        relationships: {}
+      }
+    });
+    request.respond(204, { "Content-Type": "application/vnd.api+json" }, "");
+  });
   store.add({
     type: "products",
     id: "9",
@@ -190,4 +196,19 @@ test("update must throw an error if the type has not been defined", function (t)
   t.throws(function () {
     store.update("products", "1", {});
   }, /Unknown type 'products'/);
+});
+
+test("update must use the correct content type header", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  t.plan(1);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  server.respondWith("PATCH", "/products/4", function (request) {
+    t.notEqual(request.requestHeaders["Content-Type"].split(";").indexOf("application/vnd.api+json"), -1);
+  });
+  store.update("products", "4", {});
+  server.respond();
+  server.restore();
 });
