@@ -16,12 +16,13 @@ test("update must call the update method prodvided by the adapter", function (t)
   var type = "foo";
   var id = "1";
   var partial = {};
+  var options = {};
   var success = function () {};
   var error = function () {};
   var context = {};
   t.plan(2);
   t.doesNotThrow(function () {
-    store.update(type, id, partial, success, error, context);
+    store.update(type, id, partial, options, success, error, context);
   }, "should not throw an error");
-  t.ok(adatper.update.calledWith(store, type, id, partial, success, error, context), "should call adapter with the same params");
+  t.ok(adatper.update.calledWith(store, type, id, partial, options, success, error, context), "should call adapter with the same params");
 });

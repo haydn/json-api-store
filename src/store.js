@@ -237,6 +237,7 @@ export default class Store {
    * @since 0.5.0
    * @param {!string} type - Type of resource.
    * @param {!Object} partial - Data to create the resource with.
+   * @param {Object} [options] - Options to pass to the adapter.
    * @param {function} [success] - Callback on success.
    * @param {function} [error] - Callback on error.
    * @param {Object} [context] - Context for the callbacks.
@@ -248,9 +249,9 @@ export default class Store {
    *   console.log(product.title);
    * });
    */
-  create(type, partial, success, error, context) {
+  create(type, partial, options, success, error, context) {
     if (this._adapter) {
-      this._adapter.create(this, type, partial, success, error, context);
+      this._adapter.create(this, type, partial, options, success, error, context);
     } else {
       throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
     }
@@ -286,6 +287,7 @@ export default class Store {
    * @since 0.5.0
    * @param {!string} type - Type of resource.
    * @param {!string} id - ID of resource.
+   * @param {Object} [options] - Options to pass to the adapter.
    * @param {function} [success] - Callback on success.
    * @param {function} [error] - Callback on error.
    * @param {Object} [context] - Context for the callbacks.
@@ -297,9 +299,9 @@ export default class Store {
    *   console.log("Destroyed!");
    * });
    */
-  destroy(type, id, success, error, context) {
+  destroy(type, id, options, success, error, context) {
     if (this._adapter) {
-      this._adapter.destroy(this, type, id, success, error, context);
+      this._adapter.destroy(this, type, id, options, success, error, context);
     } else {
       throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
     }
@@ -357,7 +359,7 @@ export default class Store {
    * @since 0.5.0
    * @param {!string} type - Type of resource.
    * @param {!string} [id] - ID of resource.
-   * @param {Object} [options] - **NOT YET IMPLEMENTED** (this will include sorting, filtering and pagination options)
+   * @param {Object} [options] - Options to pass to the adapter.
    * @param {function} [success] - Callback on success.
    * @param {function} [error] - Callback on error.
    * @param {Object} [context] - Context for the callbacks.
@@ -512,6 +514,7 @@ export default class Store {
    * @param {!string} type - Type of resource.
    * @param {!string} id - ID of resource.
    * @param {!Object} partial - Data to update the resource with.
+   * @param {Object} [options] - Options to pass to the adapter.
    * @param {function} [success] - Callback on success.
    * @param {function} [error] - Callback on error.
    * @param {Object} [context] - Context for the callbacks.
@@ -523,9 +526,9 @@ export default class Store {
    *   console.log(product.title);
    * });
    */
-  update(type, id, partial, success, error, context) {
+  update(type, id, partial, options, success, error, context) {
     if (this._adapter) {
-      this._adapter.update(this, type, id, partial, success, error, context);
+      this._adapter.update(this, type, id, partial, options, success, error, context);
     } else {
       throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
     }
