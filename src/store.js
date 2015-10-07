@@ -338,10 +338,12 @@ export default class Store {
           return this._data[type][id];
         } else {
           // throw new TypeError(`You must provide an id`);
+          /*eslint-disable*/
           console.warn([
             "Using the `store.find()` method to find an entire collection has been deprecated in favour of `store.findAll()`.",
             "For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.7.0"
           ].join("\n"));
+          /*eslint-enable*/
           return this.findAll(type);
         }
       } else {
@@ -395,10 +397,12 @@ export default class Store {
    */
   load(type, id, options) {
     if (!id || typeof id === "object") {
+      /*eslint-disable*/
       console.warn([
         "Using the `store.load()` method to load an entire collection has been deprecated in favour of `store.loadAll()`.",
         "For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.7.0"
       ].join("\n"));
+      /*eslint-enable*/
     }
     if (this._adapter) {
       return this._adapter.load(this, type, id, options);
@@ -442,10 +446,12 @@ export default class Store {
    * @param {function} callback - Function originally passed to on().
    */
   off(event, type, id, callback) {
+    /*eslint-disable*/
     console.warn([
       "The `store.off()` method has been deprecated in favour of `store.observable`.",
       "For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.6.0"
     ].join("\n"));
+    /*eslint-enable*/
     if (event === "added" || event === "updated" || event === "removed") {
       if (this._types[type]) {
         if (id && ({}).toString.call(id) === '[object Function]') {
@@ -474,10 +480,12 @@ export default class Store {
    * @param {Object} [context] - Context in which to call the callback.
    */
   on(event, type, id, callback, context) {
+    /*eslint-disable*/
     console.warn([
       "The `store.on()` method has been deprecated in favour of `store.observable`.",
       "For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.6.0"
     ].join("\n"));
+    /*eslint-enable*/
     if (event === "added" || event === "updated" || event === "removed") {
       if (this._types[type]) {
         if (id && ({}).toString.call(id) === '[object Function]') {
