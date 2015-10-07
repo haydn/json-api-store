@@ -304,16 +304,15 @@ export default class Store {
   }
 
   /**
-   * Find a resource or entire collection of resources.
+   * Finds a resource by type and id.
    *
    * NOTE: If the resource hasn't been loaded via an add() or push() call it
    * will be automatically created when find is called.
    *
    * @since 0.1.0
-   * @param {!string} type - Type of the resource(s) to find.
-   * @param {string} [id] - The id of the resource to find. If omitted all
-   *                        resources of the type will be returned.
-   * @return {Object|Object[]} - Either the resource or an array of resources.
+   * @param {!string} type - Type of the resource to find.
+   * @param {!string} id - The id of the resource to find.
+   * @return {Object} - The resource.
    */
   find(type, id) {
     if (type) {
@@ -338,8 +337,37 @@ export default class Store {
           }
           return this._data[type][id];
         } else {
-          return Object.keys(this._data[type]).map(x => this._data[type][x]);
+          // throw new TypeError(`You must provide an id`);
+          console.warn([
+            "Using the `store.find()` method to find an entire collection has been deprecated in favour of `store.findAll()`.",
+            "For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.7.0"
+          ].join("\n"));
+          return this.findAll(type);
         }
+      } else {
+        throw new TypeError(`Unknown type '${type}'`);
+      }
+    } else {
+      throw new TypeError(`You must provide a type`);
+    }
+  }
+
+  /**
+   * Finds all the resources of a given type.
+   *
+   * @since 0.7.0
+   * @param {!string} type - Type of the resource to find.
+   * @return {Object[]} - An array of resources.
+   */
+  findAll(type) {
+    if (type) {
+      let definition = this._types[type];
+      if (definition) {
+        if (!this._data[type]) {
+          let collection = {};
+          definition._names.forEach(t => this._data[t] = collection);
+        }
+        return Object.keys(this._data[type]).map(x => this._data[type][x]);
       } else {
         throw new TypeError(`Unknown type '${type}'`);
       }

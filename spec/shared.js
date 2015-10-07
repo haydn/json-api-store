@@ -35,6 +35,7 @@ import "./store/core/add-spec";
 import "./store/core/convert-spec";
 import "./store/core/define-spec";
 import "./store/core/find-spec";
+import "./store/core/find-all-spec";
 import "./store/core/push-spec";
 import "./store/core/remove-spec";
 import "./store/events/observable-spec";
