@@ -1,0 +1,35 @@
+{
+  "name": "json-api-store",
+  "version": "0.6.1",
+  "description": "An isomorphic JavaScript library that acts as an in memory data store for JSON API data.",
+  "repository": "haydn/json-api-store",
+  "main": "dist/store.js",
+  "scripts": {
+    "build": "./scripts/build",
+    "docs": "./node_modules/.bin/esdoc -c esdoc.json",
+    "release": "./scripts/release",
+    "test": "./scripts/test"
+  },
+  "author": "Haydn Ewers",
+  "license": "MIT",
+  "devDependencies": {
+    "babel": "^5.8.21",
+    "babelify": "^6.2.0",
+    "browser-run": "2.5.0",
+    "browserify": "^11.0.1",
+    "chokidar-cli": "^1.0.1",
+    "esdoc": "^0.2.2",
+    "eslint": "^1.3.1",
+    "exorcist": "^0.4.0",
+    "faucet": "0.0.1",
+    "sinon": "^1.16.1",
+    "tape-catch": "^1.0.4",
+    "tape-run": "^1.1.0",
+    "tape": "^4.2.0",
+    "uglifyify": "^3.0.1"
+  },
+  "dependencies": {
+    "array.prototype.find": "^1.0.0",
+    "rx": "^4.0.0"
+  }
+}

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl">
+  <title data-ice="title">API Document</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  
+  
+</head>
+<body class="layout-container">
+
+<header>
+  <a href="./">Home</a>
+  <a href="identifiers.html">Identifier</a>
+  <a href="source.html">Source</a>
+  
+  <a data-ice="repoURL" href="https://github.com/haydn/json-api-store" class="repo-url-github">Repository</a>
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+</header>
+
+<nav class="navigation" data-ice="nav"><div data-ice="classWrap">
+  <h2>Class</h2>
+  <ul>
+    
+  <li data-ice="classDoc"><span><a href="class/src/ajax-adapter.js~AjaxAdapter.html">AjaxAdapter</a></span></li>
+<li data-ice="classDoc"><span><a href="class/src/store.js~Store.html">Store</a></span></li>
+</ul>
+</div>
+
+
+
+<div data-ice="functionWrap">
+  <h2><a href="function/">Function</a></h2>
+  <ul>
+    
+  <li data-ice="functionDoc"><span><a href="function/index.html#static-function-ajax">ajax</a></span></li>
+</ul>
+</div>
+
+
+
+
+
+
+</nav>
+
+<div class="content" data-ice="content"><div data-ice="index" class="github-markdown"><h1 id="json-api-store-build-status-https-travis-ci-org-haydn-json-api-store-svg-branch-master-https-travis-ci-org-haydn-json-api-store-npm-version-https-badge-fury-io-js-json-api-store-svg-http-badge-fury-io-js-json-api-store-bithound-score-https-www-bithound-io-github-haydn-json-api-store-badges-score-svg-https-www-bithound-io-github-haydn-json-api-store-">JSON API Store <a href="https://travis-ci.org/haydn/json-api-store"><img src="https://travis-ci.org/haydn/json-api-store.svg?branch=master" alt="Build Status"></a> <a href="http://badge.fury.io/js/json-api-store"><img src="https://badge.fury.io/js/json-api-store.svg" alt="NPM Version"></a> <a href="https://www.bithound.io/github/haydn/json-api-store"><img src="https://www.bithound.io/github/haydn/json-api-store/badges/score.svg" alt="bitHound Score"></a></h1>
+<p>An isomorphic JavaScript library that acts as an in memory data store for
+<a href="http://jsonapi.org">JSON API</a> data. Changes are
+broadcast using <a href="https://github.com/Reactive-Extensions/RxJS">RxJS</a>. Built to
+work with <a href="https://facebook.github.io/react/">React</a>.</p>
+<h2 id="usage">Usage</h2>
+<h3 id="browser">Browser</h3>
+<p>At the moment the primary use can for JSON API Store is in the browser:</p>
+<pre><code class="lang-javascript"><code class="source-code prettyprint">
+// Create a new store instance.
+var adapter = new Store.AjaxAdapter({ base: &quot;/api/v1&quot; });
+var store = new Store(adapter);
+
+// Define the &quot;categories&quot; type.
+store.define([ &quot;categories&quot;, &quot;category&quot; ], {
+  title: Store.attr(),
+  products: Store.hasMany()
+});
+
+// Define the &quot;products&quot; type.
+store.define([ &quot;products&quot;, &quot;product&quot; ], {
+  title: Store.attr(),
+  category: Store.hasOne()
+});
+
+// Subscribe to events using RxJS.
+store.observable.subscribe(function (event) {
+  console.log(event.name, event.type, event.id, event.resource);
+});
+
+// Load all the products.
+store.load(&quot;products&quot;, { include: &quot;category&quot; }, function (products) {
+
+  products.length; // 1
+  products[0].id; // &quot;1&quot;
+  products[0].title; // &quot;Example Book&quot;
+  products[0].category.id; // &quot;1&quot;
+  products[0].category.title; // &quot;Books&quot;
+
+  products[0] === store.find(&quot;products&quot;, &quot;1&quot;); // true
+  products[0].category === store.find(&quot;categories&quot;, &quot;1&quot;); // true
+
+});</code>
+</code></pre>
+<h3 id="node">Node</h3>
+<p>You can also use JSON API Store in a Node.js environment (currently, there
+aren&apos;t any adapters that work in a Node.js):</p>
+<p><strong>NOTE</strong>: Without an adapter the CLUD methods (<code>create</code>, <code>load</code>, <code>update</code> and
+<code>destroy</code>) cannot be used.</p>
+<pre><code class="lang-javascript"><code class="source-code prettyprint">
+var Store = require(&quot;json-api-store&quot;);
+
+var store = new Store();
+
+store.define([ &quot;categories&quot;, &quot;category&quot; ], {
+  title: Store.attr(),
+  products: Store.hasMany()
+});
+
+store.define([ &quot;products&quot;, &quot;product&quot; ], {
+  title: Store.attr(),
+  category: Store.hasOne()
+});
+
+store.add({
+  type: &quot;products&quot;,
+  id: &quot;1&quot;,
+  attributes: {
+    title: &quot;Example Product&quot;
+  },
+  relationships: {
+    category: {
+      data: {
+        type: &quot;categories&quot;,
+        id: &quot;1&quot;
+      }
+    }
+  }
+});
+
+store.add({
+  type: &quot;categories&quot;,
+  id: &quot;1&quot;,
+  attributes: {
+    title: &quot;Example Category&quot;
+  }
+});
+
+store.find(&quot;products&quot;, &quot;1&quot;).category.title; // &quot;Example Category&quot;</code>
+</code></pre>
+<h2 id="documentation">Documentation</h2>
+<p>Full documentation is available on the website:</p>
+<p><a href="http://particlesystem.com/json-api-store/">http://particlesystem.com/json-api-store/</a></p>
+<h2 id="installing">Installing</h2>
+<h4 id="npm">NPM</h4>
+<pre><code><code class="source-code prettyprint">npm i json-api-store</code>
+</code></pre><h4 id="bower">Bower</h4>
+<pre><code><code class="source-code prettyprint">bower i json-api-store</code>
+</code></pre><h4 id="download">Download</h4>
+<p>To use directly in the browser you can grab the <a href="https://raw.githubusercontent.com/haydn/json-api-store/master/dist/store.prod.js">store.prod.js</a> file.</p>
+</div>
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.2.6)</span></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

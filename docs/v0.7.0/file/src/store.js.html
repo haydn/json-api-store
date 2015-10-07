@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../">
+  <title data-ice="title">src/store.js | API Document</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  
+  
+</head>
+<body class="layout-container">
+
+<header>
+  <a href="./">Home</a>
+  <a href="identifiers.html">Identifier</a>
+  <a href="source.html">Source</a>
+  
+  <a data-ice="repoURL" href="https://github.com/haydn/json-api-store" class="repo-url-github">Repository</a>
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+</header>
+
+<nav class="navigation" data-ice="nav"><div data-ice="classWrap">
+  <h2>Class</h2>
+  <ul>
+    
+  <li data-ice="classDoc"><span><a href="class/src/ajax-adapter.js~AjaxAdapter.html">AjaxAdapter</a></span></li>
+<li data-ice="classDoc"><span><a href="class/src/store.js~Store.html">Store</a></span></li>
+</ul>
+</div>
+
+
+
+<div data-ice="functionWrap">
+  <h2><a href="function/">Function</a></h2>
+  <ul>
+    
+  <li data-ice="functionDoc"><span><a href="function/index.html#static-function-ajax">ajax</a></span></li>
+</ul>
+</div>
+
+
+
+
+
+
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">src/store.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">import &quot;array.prototype.find&quot;;
+import Rx from &quot;rx&quot;;
+import AjaxAdapter from &quot;./ajax-adapter&quot;;
+
+export default class Store {
+
+  /**
+   * Creates a field definition for an attribute.
+   *
+   * @since 0.1.0
+   * @param {string} [name] - Name of the property to map this field from.
+   * @param {Object} [options] - An options object.
+   * @param {string} [options.default] - Default value for this field.
+   * @return {Object} - Field definition.
+   */
+  static attr(name, options) {
+    if (name &amp;&amp; typeof name === &apos;object&apos;) {
+      return Store.attr(null, name);
+    } else {
+      return {
+        type: &quot;attr&quot;,
+        default: options &amp;&amp; options.default,
+        deserialize: function (data, key) {
+          return data.attributes &amp;&amp; data.attributes[name || key];
+        },
+        serialize: function (resource, data, key) {
+          data.attributes[name || key] = resource[key];
+        }
+      };
+    }
+  }
+
+  /**
+   * Creates a field definition for an has-one relationship.
+   *
+   * @since 0.1.0
+   * @param {string} [name] - Name of the property to map this field from.
+   * @param {Object} [options] - An options object.
+   * @param {string} [options.inverse] - Name of the inverse relationship.
+   * @return {Object} - Field definition.
+   */
+  static hasOne(name, options) {
+    if (name &amp;&amp; typeof name === &apos;object&apos;) {
+      return Store.hasOne(null, name);
+    } else {
+      return {
+        type: &quot;has-one&quot;,
+        inverse: options &amp;&amp; options.inverse,
+        deserialize: function (data, key) {
+          name = name || key;
+          if (data.relationships &amp;&amp; data.relationships[name]) {
+            if (data.relationships[name].data === null) {
+              return null;
+            } else if (data.relationships[name].data) {
+              return this.find(data.relationships[name].data.type, data.relationships[name].data.id);
+            }
+          }
+        },
+        serialize: function serialize(resource, data, key) {
+          if (resource[key] === null) {
+            data.relationships[name || key] = null;
+          } else if (resource[key]) {
+            data.relationships[name || key] = {
+              data: {
+                type: resource[key].type,
+                id: resource[key].id
+              }
+            };
+          }
+        }
+      };
+    }
+  }
+
+  /**
+   * Creates a field definition for an has-many relationship.
+   *
+   * @since 0.1.0
+   * @param {string} [name] - Name of the property to map this field from.
+   * @param {Object} [options] - An options object.
+   * @param {string} [options.inverse] - Name of the inverse relationship.
+   * @return {Object} - Field definition.
+   */
+  static hasMany(name, options) {
+    if (name &amp;&amp; typeof name === &apos;object&apos;) {
+      return Store.hasMany(null, name);
+    } else {
+      return {
+        type: &quot;has-many&quot;,
+        default: [],
+        inverse: options &amp;&amp; options.inverse,
+        deserialize: function (data, key) {
+          name = name || key;
+          if (data.relationships &amp;&amp; data.relationships[name]) {
+            if (data.relationships[name].data === null) {
+              return [];
+            } else if (data.relationships[name].data) {
+              return data.relationships[name].data.map((c) =&gt; {
+                return this.find(c.type, c.id);
+              });
+            }
+          }
+        },
+        serialize: function serialize(resource, data, key) {
+          if (resource[key]) {
+            data.relationships[name || key] = {
+              data: resource[key].map(x =&gt; {
+                return { type: x.type, id: x.id };
+              })
+            };
+          }
+        }
+      };
+    }
+  }
+
+  constructor(adapter) {
+
+    this._adapter = adapter;
+    this._data = {};
+    this._subject = new Rx.Subject();
+    this._subscriptions = {};
+    this._types = {};
+
+    /**
+     * An observable that will emit events when any resource in added, updated
+     * or removed. The object passed to listeners will be in this format:
+     *
+     * &lt;p&gt;&lt;pre class=&quot;source-code&quot;&gt;
+     * { name: string, type: string, id: string, resource: object }
+     * &lt;/pre&gt;&lt;/p&gt;
+     *
+     * You can learn more about RxJS observables at the GitHub repo:
+     * https://github.com/Reactive-Extensions/RxJS
+     *
+     * @type {Rx.Observable}
+     * @since 0.6.0
+     *
+     * @example
+     * let store = new Store();
+     *
+     * store.observable.filter(e =&gt; e.name === &quot;added&quot;).subscribe(event =&gt; {
+     *   console.log(event.name); // &quot;added&quot;
+     *   console.log(event.type); // &quot;products&quot;
+     *   console.log(event.id); // &quot;1&quot;
+     *   console.log(event.resource); // Map {...}
+     * });
+     *
+     * store.observable.filter(e =&gt; e.name === &quot;updated&quot;).subscribe(event =&gt; {
+     *   console.log(event.name); // &quot;updated&quot;
+     *   console.log(event.type); // &quot;products&quot;
+     *   console.log(event.id); // &quot;1&quot;
+     *   console.log(event.resource); // Map {...}
+     * });
+     *
+     * store.observable.filter(e =&gt; e.name === &quot;removed&quot;).subscribe(event =&gt; {
+     *   console.log(event.name); // &quot;removed&quot;
+     *   console.log(event.type); // &quot;products&quot;
+     *   console.log(event.id); // &quot;1&quot;
+     *   console.log(event.resource); // null
+     * });
+     */
+    this.observable = this._subject.asObservable();
+
+  }
+
+  /**
+   * Add an individual resource to the store. This is used internally by the
+   * `push()` method.
+   *
+   * @since 0.1.0
+   * @param {!Object} object - A JSON API Resource Object to be added. See:
+            http://jsonapi.org/format/#document-resource-objects
+   */
+  add(object) {
+    if (object) {
+      if (object.type &amp;&amp; object.id) {
+        let name = this._data[object.type] &amp;&amp; this._data[object.type][object.id] ? &quot;updated&quot; : &quot;added&quot;;
+        let resource = this.find(object.type, object.id);
+        let definition = this._types[object.type];
+        Object.keys(definition).forEach(fieldName =&gt; {
+          if (fieldName[0] !== &quot;_&quot;) {
+            this._addField(object, resource, definition, fieldName);
+          }
+        });
+        this._subject.onNext({
+          name: name,
+          type: object.type,
+          id: object.id,
+          resource: resource
+        });
+      } else {
+        throw new TypeError(`The data must have a type and id`);
+      }
+    } else {
+      throw new TypeError(`You must provide data to add`);
+    }
+  }
+
+  /**
+   * Converts the given partial into a JSON API compliant representation.
+   *
+   * @since 0.5.0
+   * @param {!string} [type] - The type of the resource. This can be omitted if the partial includes a type property.
+   * @param {!string} [id] - The id of the resource. This can be omitted if the partial includes an id property.
+   * @param {!object} partial - The data to convert.
+   * @return {object} - JSON API version of the object.
+   */
+  convert(type, id, partial) {
+    if (type &amp;&amp; typeof type === &quot;object&quot;) {
+      return this.convert(type.type, type.id, type);
+    } else if (id &amp;&amp; typeof id === &quot;object&quot;) {
+      return this.convert(type, id.id, id);
+    } else {
+      let data = {
+        type: type,
+        attributes: {},
+        relationships: {}
+      };
+      if (id) {
+        data.id = id;
+      }
+      let definition = this._types[data.type];
+      Object.keys(definition).forEach(fieldName =&gt; {
+        if (fieldName[0] !== &quot;_&quot;) {
+          definition[fieldName].serialize(partial, data, fieldName);
+        }
+      });
+      return data;
+    }
+  }
+
+  /**
+   * Attempts to create the resource through the adapter and adds it to  the
+   * store if successful.
+   *
+   * @since 0.5.0
+   * @param {!string} type - Type of resource.
+   * @param {!Object} partial - Data to create the resource with.
+   * @param {Object} [options] - Options to pass to the adapter.
+   * @return {Rx.Observable}
+   *
+   * @example
+   * let adapter = new Store.AjaxAdapter();
+   * let store = new Store(adpater);
+   * store.create(&quot;product&quot;, { title: &quot;A Book&quot; }).subscribe((product) =&gt; {
+   *   console.log(product.title);
+   * });
+   */
+  create(type, partial, options) {
+    if (this._adapter) {
+      return this._adapter.create(this, type, partial, options);
+    } else {
+      throw new Error(&quot;Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`&quot;);
+    }
+  }
+
+  /**
+   * Defines a type of resource.
+   *
+   * @since 0.2.0
+   * @param {!string|string[]} names - Name(s) of the resource.
+   * @param {!Object} definition - The resource&apos;s definition.
+   */
+  define(names, definition) {
+    names = (names.constructor === Array) ? names : [ names ];
+    if (definition) {
+      definition._names = names;
+      names.forEach(name =&gt; {
+        if (!this._types[name]) {
+          this._types[name] = definition;
+        } else {
+          throw new Error(`The type &apos;${name}&apos; has already been defined.`);
+        }
+      });
+    } else {
+      throw new Error(`You must provide a definition for the type &apos;${names[0]}&apos;.`);
+    }
+  }
+
+  /**
+   * Attempts to delete the resource through the adapter and removes it from
+   * the store if successful.
+   *
+   * @since 0.5.0
+   * @param {!string} type - Type of resource.
+   * @param {!string} id - ID of resource.
+   * @param {Object} [options] - Options to pass to the adapter.
+   * @return {Rx.Observable}
+   *
+   * @example
+   * let adapter = new Store.AjaxAdapter();
+   * let store = new Store(adpater);
+   * store.destroy(&quot;product&quot;, &quot;1&quot;).subscribe(() =&gt; {
+   *   console.log(&quot;Destroyed!&quot;);
+   * });
+   */
+  destroy(type, id, options) {
+    if (this._adapter) {
+      return this._adapter.destroy(this, type, id, options);
+    } else {
+      throw new Error(&quot;Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`&quot;);
+    }
+  }
+
+  /**
+   * Finds a resource by type and id.
+   *
+   * NOTE: If the resource hasn&apos;t been loaded via an add() or push() call it
+   * will be automatically created when find is called.
+   *
+   * @since 0.1.0
+   * @param {!string} type - Type of the resource to find.
+   * @param {!string} id - The id of the resource to find.
+   * @return {Object} - The resource.
+   */
+  find(type, id) {
+    if (type) {
+      let definition = this._types[type];
+      if (definition) {
+        if (!this._data[type]) {
+          let collection = {};
+          definition._names.forEach(t =&gt; this._data[t] = collection);
+        }
+        if (id) {
+          if (!this._data[type][id]) {
+            this._data[type][id] = {
+              _dependents: [],
+              type: type,
+              id: id
+            };
+            Object.keys(definition).forEach(key =&gt; {
+              if (key[0] !== &quot;_&quot;) {
+                this._data[type][id][key] = definition[key].default;
+              }
+            });
+          }
+          return this._data[type][id];
+        } else {
+          // throw new TypeError(`You must provide an id`);
+          /*eslint-disable*/
+          console.warn([
+            &quot;Using the `store.find()` method to find an entire collection has been deprecated in favour of `store.findAll()`.&quot;,
+            &quot;For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.7.0&quot;
+          ].join(&quot;\n&quot;));
+          /*eslint-enable*/
+          return this.findAll(type);
+        }
+      } else {
+        throw new TypeError(`Unknown type &apos;${type}&apos;`);
+      }
+    } else {
+      throw new TypeError(`You must provide a type`);
+    }
+  }
+
+  /**
+   * Finds all the resources of a given type.
+   *
+   * @since 0.7.0
+   * @param {!string} type - Type of the resource to find.
+   * @return {Object[]} - An array of resources.
+   */
+  findAll(type) {
+    if (type) {
+      let definition = this._types[type];
+      if (definition) {
+        if (!this._data[type]) {
+          let collection = {};
+          definition._names.forEach(t =&gt; this._data[t] = collection);
+        }
+        return Object.keys(this._data[type]).map(x =&gt; this._data[type][x]);
+      } else {
+        throw new TypeError(`Unknown type &apos;${type}&apos;`);
+      }
+    } else {
+      throw new TypeError(`You must provide a type`);
+    }
+  }
+
+  /**
+   * Attempts to load the given resource through the adapter and adds it to the
+   * store if successful.
+   *
+   * @since 0.5.0
+   * @param {!string} type - Type of resource.
+   * @param {!string} id - ID of resource.
+   * @param {Object} [options] - Options to pass to the adapter.
+   * @return {Rx.Observable}
+   *
+   * @example
+   * let adapter = new Store.AjaxAdapter();
+   * let store = new Store(adpater);
+   * store.load(&quot;products&quot;, &quot;1&quot;).subscribe((product) =&gt; {
+   *   console.log(product.title);
+   * });
+   */
+  load(type, id, options) {
+    if (!id || typeof id === &quot;object&quot;) {
+      /*eslint-disable*/
+      console.warn([
+        &quot;Using the `store.load()` method to load an entire collection has been deprecated in favour of `store.loadAll()`.&quot;,
+        &quot;For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.7.0&quot;
+      ].join(&quot;\n&quot;));
+      /*eslint-enable*/
+    }
+    if (this._adapter) {
+      return this._adapter.load(this, type, id, options);
+    } else {
+      throw new Error(&quot;Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`&quot;);
+    }
+  }
+
+  /**
+   * Attempts to load all the resources of the given type through the adapter
+   * and adds them to the store if successful.
+   *
+   * @since 0.7.0
+   * @param {!string} type - Type of resource.
+   * @param {Object} [options] - Options to pass to the adapter.
+   * @return {Rx.Observable}
+   *
+   * @example
+   * let adapter = new Store.AjaxAdapter();
+   * let store = new Store(adpater);
+   * store.loadAll(&quot;products&quot;).subscribe((products) =&gt; {
+   *   console.log(products);
+   * });
+   */
+  loadAll(type, options) {
+    if (this._adapter) {
+      return this._adapter.load(this, type, null, options);
+    } else {
+      throw new Error(&quot;Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`&quot;);
+    }
+  }
+
+  /**
+   * Unregister an event listener that was registered with on().
+   *
+   * @deprecated Use the &lt;code&gt;store.observable&lt;/code&gt; property instead of this.
+   * @since 0.4.0
+   * @param {string} event - Name of the event.
+   * @param {string} type - Name of resource to originally passed to on().
+   * @param {string} [id] - ID of the resource to originally passed to on().
+   * @param {function} callback - Function originally passed to on().
+   */
+  off(event, type, id, callback) {
+    /*eslint-disable*/
+    console.warn([
+      &quot;The `store.off()` method has been deprecated in favour of `store.observable`.&quot;,
+      &quot;For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.6.0&quot;
+    ].join(&quot;\n&quot;));
+    /*eslint-enable*/
+    if (event === &quot;added&quot; || event === &quot;updated&quot; || event === &quot;removed&quot;) {
+      if (this._types[type]) {
+        if (id &amp;&amp; ({}).toString.call(id) === &apos;[object Function]&apos;) {
+          this.off.call(this, event, type, null, id, callback);
+        } else if (this._subscriptions[event] &amp;&amp; this._subscriptions[event][type] &amp;&amp; this._subscriptions[event][type][id || &quot;*&quot;]) {
+          this._subscriptions[event][type][id || &quot;*&quot;].dispose();
+          delete this._subscriptions[event][type][id || &quot;*&quot;];
+        }
+      } else {
+        throw new Error(`Unknown type &apos;${type}&apos;`);
+      }
+    } else {
+      throw new Error(`Unknown event &apos;${event}&apos;`);
+    }
+  }
+
+  /**
+   * Register an event listener: &quot;added&quot;, &quot;updated&quot; or &quot;removed&quot;.
+   *
+   * @deprecated Use the &lt;code&gt;store.observable&lt;/code&gt; property instead of this.
+   * @since 0.4.0
+   * @param {string} event - Name of the event.
+   * @param {string} type - Name of resource to watch.
+   * @param {string} [id] - ID of the resource to watch.
+   * @param {function} callback - Function to call when the event occurs.
+   * @param {Object} [context] - Context in which to call the callback.
+   */
+  on(event, type, id, callback, context) {
+    /*eslint-disable*/
+    console.warn([
+      &quot;The `store.on()` method has been deprecated in favour of `store.observable`.&quot;,
+      &quot;For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.6.0&quot;
+    ].join(&quot;\n&quot;));
+    /*eslint-enable*/
+    if (event === &quot;added&quot; || event === &quot;updated&quot; || event === &quot;removed&quot;) {
+      if (this._types[type]) {
+        if (id &amp;&amp; ({}).toString.call(id) === &apos;[object Function]&apos;) {
+          this.on.call(this, event, type, null, id, callback);
+        } else if (!this._subscriptions[event] || !this._subscriptions[event][type] || !this._subscriptions[event][type][id || &quot;*&quot;]) {
+          let subscription = this._subject.filter(e =&gt; e.name === event);
+          subscription = subscription.filter(e =&gt; this._types[type]._names.indexOf(e.type) !== -1);
+          if (id) {
+            subscription = subscription.filter(e =&gt; e.id === id);
+          }
+          subscription = subscription.map(e =&gt; this.find(e.type, e.id));
+          this._subscriptions[event] = this._subscriptions[event] || {};
+          if (!this._subscriptions[event][type]) {
+            let obj = {};
+            this._types[type]._names.forEach(type =&gt; {
+              this._subscriptions[event][type] = obj;
+            });
+          }
+          this._subscriptions[event][type][id || &quot;*&quot;] = subscription.subscribe(callback.bind(context));
+        }
+      } else {
+        throw new Error(`Unknown type &apos;${type}&apos;`);
+      }
+    } else {
+      throw new Error(`Unknown event &apos;${event}&apos;`);
+    }
+  }
+
+  /**
+   * Add a JSON API response to the store. This method can be used to handle a
+   * successful GET or POST response from the server.
+   *
+   * @since 0.1.0
+   * @param {Object} root - Top Level Object to push. See:
+                            http://jsonapi.org/format/#document-top-level
+   */
+  push(root) {
+    if (root.data.constructor === Array) {
+      root.data.forEach(x =&gt; this.add(x));
+    } else {
+      this.add(root.data);
+    }
+    if (root.included) {
+      root.included.forEach(x =&gt; this.add(x));
+    }
+  }
+
+  /**
+   * Remove a resource or collection of resources from the store.
+   *
+   * @since 0.1.0
+   * @param {!string} type - Type of the resource(s) to remove.
+   * @param {string} [id] - The id of the resource to remove. If omitted all
+   *                        resources of the type will be removed.
+   */
+  remove(type, id) {
+    if (type) {
+      if (this._types[type]) {
+        if (id) {
+          let resource = this._data[type] &amp;&amp; this._data[type][id];
+          if (resource) {
+            this._remove(resource);
+            this._subject.onNext({
+              name: &quot;removed&quot;,
+              type: type,
+              id: id,
+              resource: null
+            });
+          }
+        } else {
+          Object.keys(this._data[type]).forEach(id =&gt; this.remove(type, id));
+        }
+      } else {
+        throw new TypeError(`Unknown type &apos;${type}&apos;`);
+      }
+    } else {
+      throw new TypeError(`You must provide a type to remove`);
+    }
+  }
+
+  /**
+   * Attempts to update the resource through the adapter and updates it in  the
+   * store if successful.
+   *
+   * @since 0.5.0
+   * @param {!string} type - Type of resource.
+   * @param {!string} id - ID of resource.
+   * @param {!Object} partial - Data to update the resource with.
+   * @param {Object} [options] - Options to pass to the adapter.
+   * @return {Rx.Observable}
+   *
+   * @example
+   * let adapter = new Store.AjaxAdapter();
+   * let store = new Store(adpater);
+   * store.update(&quot;product&quot;, &quot;1&quot;, { title: &quot;foo&quot; }).subscribe((product) =&gt; {
+   *   console.log(product.title);
+   * });
+   */
+  update(type, id, partial, options) {
+    if (this._adapter) {
+      return this._adapter.update(this, type, id, partial, options);
+    } else {
+      throw new Error(&quot;Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`&quot;);
+    }
+  }
+
+  _addField(object, resource, definition, fieldName) {
+    var field = definition[fieldName];
+    var newValue = field.deserialize.call(this, object, fieldName);
+    if (typeof newValue !== &quot;undefined&quot;) {
+      if (field.type === &quot;has-one&quot;) {
+        if (resource[fieldName]) {
+          this._removeInverseRelationship(resource, fieldName, resource[fieldName], field);
+        }
+        if (newValue) {
+          this._addInverseRelationship(resource, fieldName, newValue, field);
+        }
+      } else if (field.type === &quot;has-many&quot;) {
+        resource[fieldName].forEach(r =&gt; {
+          if (resource[fieldName].indexOf(r) !== -1) {
+            this._removeInverseRelationship(resource, fieldName, r, field);
+          }
+        });
+        newValue.forEach(r =&gt; {
+          this._addInverseRelationship(resource, fieldName, r, field);
+        });
+      }
+      resource[fieldName] = newValue;
+    }
+  }
+
+  _addInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {
+    var targetDefinition = this._types[targetResource.type];
+    var sourceDefinition = this._types[sourceResource.type];
+    if (targetDefinition) {
+      let targetFieldName = [ sourceField.inverse ].concat(sourceDefinition._names).find(x =&gt; targetDefinition[x]);
+      let targetField = targetDefinition &amp;&amp; targetDefinition[targetFieldName];
+      targetResource._dependents.push({ type: sourceResource.type, id: sourceResource.id, fieldName: sourceFieldName });
+      if (targetField) {
+        if (targetField.type === &quot;has-one&quot;) {
+          sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });
+          targetResource[targetFieldName] = sourceResource;
+        } else if (targetField.type === &quot;has-many&quot;) {
+          sourceResource._dependents.push({ type: targetResource.type, id: targetResource.id, fieldName: targetFieldName });
+          if (targetResource[targetFieldName].indexOf(sourceResource) === -1) {
+            targetResource[targetFieldName].push(sourceResource);
+          }
+        } else if (targetField.type === &quot;attr&quot;) {
+          throw new Error(`The the inverse relationship for &apos;${sourceFieldName}&apos; is an attribute (&apos;${targetFieldName}&apos;)`);
+        }
+      } else if (sourceField.inverse) {
+        throw new Error(`The the inverse relationship for &apos;${sourceFieldName}&apos; is missing (&apos;${sourceField.inverse}&apos;)`);
+      }
+    }
+  }
+
+  _remove(resource) {
+    resource._dependents.forEach(dependent =&gt; {
+      let dependentResource = this._data[dependent.type][dependent.id];
+      switch (this._types[dependent.type][dependent.fieldName].type) {
+        case &quot;has-one&quot;: {
+          dependentResource[dependent.fieldName] = null;
+          break;
+        }
+        case &quot;has-many&quot;: {
+          let index = dependentResource[dependent.fieldName].indexOf(resource);
+          if (index !== -1) {
+            dependentResource[dependent.fieldName].splice(index, 1);
+          }
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+      // TODO: This only needs to be run once for each dependent.
+      dependentResource._dependents = dependentResource._dependents.filter(d =&gt; {
+        return !(d.type === resource.type &amp;&amp; d.id === resource.id);
+      });
+    });
+    delete this._data[resource.type][resource.id];
+  }
+
+  _removeInverseRelationship(sourceResource, sourceFieldName, targetResource, sourceField) {
+    var targetDefinition = this._types[targetResource.type];
+    var targetFieldName = sourceField.inverse || sourceResource.type;
+    var targetField = targetDefinition &amp;&amp; targetDefinition[targetFieldName];
+    targetResource._dependents = targetResource._dependents.filter(r =&gt; {
+      return !(r.type === sourceResource.type &amp;&amp; r.id === sourceResource.id &amp;&amp; r.fieldName === sourceFieldName);
+    });
+    if (targetField) {
+      if (targetField.type === &quot;has-one&quot;) {
+        sourceResource._dependents = sourceResource._dependents.filter(r =&gt; {
+          return !(r.type === targetResource.type &amp;&amp; r.id === targetResource.id &amp;&amp; r.fieldName === targetFieldName);
+        });
+        targetResource[targetFieldName] = null;
+      } else if (targetField.type === &quot;has-many&quot;) {
+        sourceResource._dependents = sourceResource._dependents.filter(r =&gt; {
+          return !(r.type === targetResource.type &amp;&amp; r.id === targetResource.id &amp;&amp; r.fieldName === targetFieldName);
+        });
+        targetResource[targetFieldName] = targetResource[targetFieldName].filter(r =&gt; {
+          return r !== sourceResource;
+        });
+      } else if (targetField.type === &quot;attr&quot;) {
+        throw new Error(`The the inverse relationship for &apos;${sourceFieldName}&apos; is an attribute (&apos;${targetFieldName}&apos;)`);
+      }
+    } else if (sourceField.inverse) {
+      throw new Error(`The the inverse relationship for &apos;${sourceFieldName}&apos; is missing (&apos;${sourceField.inverse}&apos;)`);
+    }
+  }
+
+}
+
+Store.Rx = Rx;
+Store.AjaxAdapter = AjaxAdapter;
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.2.6)</span></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>
