@@ -11,18 +11,26 @@ test("update must throw an error if update is called when there isn't an adapter
 });
 
 test("update must call the update method prodvided by the adapter", function (t) {
-  var adatper = { update: sinon.spy() };
+  var a = {};
+  var adatper = {
+    update: sinon.spy(function () {
+      return a;
+    })
+  };
   var store = new Store(adatper);
   var type = "foo";
   var id = "1";
   var partial = {};
   var options = {};
-  var success = function () {};
-  var error = function () {};
-  var context = {};
-  t.plan(2);
+  var result;
+  t.plan(7);
   t.doesNotThrow(function () {
-    store.update(type, id, partial, options, success, error, context);
+    result = store.update(type, id, partial, options);
   }, "should not throw an error");
-  t.ok(adatper.update.calledWith(store, type, id, partial, options, success, error, context), "should call adapter with the same params");
+  t.equal(adatper.update.lastCall.args[0], store);
+  t.equal(adatper.update.lastCall.args[1], type);
+  t.equal(adatper.update.lastCall.args[2], id);
+  t.equal(adatper.update.lastCall.args[3], partial);
+  t.equal(adatper.update.lastCall.args[4], options);
+  t.equal(result, a);
 });

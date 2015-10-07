@@ -1,5 +1,5 @@
 import "array.prototype.find";
-import Rx from "rx-lite";
+import Rx from "rx";
 import AjaxAdapter from "./ajax-adapter";
 
 export default class Store {
@@ -238,20 +238,18 @@ export default class Store {
    * @param {!string} type - Type of resource.
    * @param {!Object} partial - Data to create the resource with.
    * @param {Object} [options] - Options to pass to the adapter.
-   * @param {function} [success] - Callback on success.
-   * @param {function} [error] - Callback on error.
-   * @param {Object} [context] - Context for the callbacks.
+   * @return {Rx.Observable}
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
    * let store = new Store(adpater);
-   * store.create("product", { title: "A Book" }, (product) => {
+   * store.create("product", { title: "A Book" }).subscribe((product) => {
    *   console.log(product.title);
    * });
    */
-  create(type, partial, options, success, error, context) {
+  create(type, partial, options) {
     if (this._adapter) {
-      this._adapter.create(this, type, partial, options, success, error, context);
+      return this._adapter.create(this, type, partial, options);
     } else {
       throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
     }
@@ -288,20 +286,18 @@ export default class Store {
    * @param {!string} type - Type of resource.
    * @param {!string} id - ID of resource.
    * @param {Object} [options] - Options to pass to the adapter.
-   * @param {function} [success] - Callback on success.
-   * @param {function} [error] - Callback on error.
-   * @param {Object} [context] - Context for the callbacks.
+   * @return {Rx.Observable}
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
    * let store = new Store(adpater);
-   * store.destroy("product", "1", () => {
+   * store.destroy("product", "1").subscribe(() => {
    *   console.log("Destroyed!");
    * });
    */
-  destroy(type, id, options, success, error, context) {
+  destroy(type, id, options) {
     if (this._adapter) {
-      this._adapter.destroy(this, type, id, options, success, error, context);
+      return this._adapter.destroy(this, type, id, options);
     } else {
       throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
     }
@@ -360,20 +356,18 @@ export default class Store {
    * @param {!string} type - Type of resource.
    * @param {!string} [id] - ID of resource.
    * @param {Object} [options] - Options to pass to the adapter.
-   * @param {function} [success] - Callback on success.
-   * @param {function} [error] - Callback on error.
-   * @param {Object} [context] - Context for the callbacks.
+   * @return {Rx.Observable}
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
    * let store = new Store(adpater);
-   * store.load("product", "1", (product) => {
+   * store.load("product", "1").subscribe((product) => {
    *   console.log(product.title);
    * });
    */
-  load(type, id, options, success, error, context) {
+  load(type, id, options) {
     if (this._adapter) {
-      this._adapter.load(this, type, id, options, success, error, context);
+      return this._adapter.load(this, type, id, options);
     } else {
       throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
     }
@@ -515,20 +509,18 @@ export default class Store {
    * @param {!string} id - ID of resource.
    * @param {!Object} partial - Data to update the resource with.
    * @param {Object} [options] - Options to pass to the adapter.
-   * @param {function} [success] - Callback on success.
-   * @param {function} [error] - Callback on error.
-   * @param {Object} [context] - Context for the callbacks.
+   * @return {Rx.Observable}
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
    * let store = new Store(adpater);
-   * store.update("product", "1", { title: "foo" }, (product) => {
+   * store.update("product", "1", { title: "foo" }).subscribe((product) => {
    *   console.log(product.title);
    * });
    */
-  update(type, id, partial, options, success, error, context) {
+  update(type, id, partial, options) {
     if (this._adapter) {
-      this._adapter.update(this, type, id, partial, options, success, error, context);
+      return this._adapter.update(this, type, id, partial, options);
     } else {
       throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
     }

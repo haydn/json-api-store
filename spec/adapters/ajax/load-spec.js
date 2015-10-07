@@ -48,7 +48,7 @@ test("load must fetch a single resource from the server and add it to the store"
     };
     request.respond(200, { "Content-Type": "application/vnd.api+json" }, JSON.stringify(data));
   });
-  store.load("products", "12", function (product) {
+  store.load("products", "12").subscribe(function (product) {
     t.equal(store.find("products", "12"), product);
     t.equal(store.find("products", "12").title, "An Awesome Book");
     t.equal(store.find("products", "12").category, store.find("categories", "6"));
@@ -99,7 +99,7 @@ test("load must fetch a collection of resources from the server and add them to 
       ]
     })
   ]);
-  store.load("products", function (products) {
+  store.load("products").subscribe(function (products) {
     t.equal(products.length, 3);
     t.equal(store.find("products").length, 3);
     t.deepEqual(store.find("products").map(a => a.title).sort(), [ "A Book", "B Book", "C Book" ]);
@@ -123,7 +123,7 @@ test("load must handle 500 errors for failed attempts", function (t) {
     ""
   ]);
   t.equal(store.find("products").length, 0);
-  store.load("products", "12", function () {
+  store.load("products", "12").subscribe(function () {
     t.fail("must not call the success callback");
   }, function () {
     t.equal(store.find("products").length, 0);
@@ -158,9 +158,9 @@ test("load must use the adapter's 'base' config if present", function (t) {
     })
   ]);
   t.equal(store.find("products").length, 0);
-  store.load("products", "9", function () {
+  store.load("products", "9").subscribe(function () {
     t.equal(store.find("products").length, 1);
-    store.load("products", function () {
+    store.load("products").subscribe(function () {
       t.deepEqual(store.find("products").map(x => x.id).sort(), [ "2", "4", "7", "9" ]);
     });
     server.respond();
@@ -187,79 +187,9 @@ test("load must call the error callback if an error is raised during the process
       ]
     })
   ]);
-  store.load("products", "1", function () {}, callback);
+  store.load("products", "1").subscribe(function () {}, callback);
   server.respond();
   t.equal(callback.callCount, 1);
-  server.restore();
-});
-
-test("load must handle missing options, success callbacks or error callbacks", function (t) {
-  var server = sinon.fakeServer.create({ autoRespond: false });
-  var adapter = new Store.AjaxAdapter();
-  var store = new Store(adapter);
-  var callback = sinon.spy();
-  var context = {};
-  t.plan(5);
-  t.timeoutAfter(1000);
-  store.define("products", {});
-  server.respondWith("GET", "/products/6", [
-    200,
-    { "Content-Type": "application/vnd.api+json" },
-    JSON.stringify({
-      data: { type: "products", id: "6" }
-    })
-  ]);
-  server.respondWith("GET", "/products/1", [
-    500,
-    { "Content-Type": "application/vnd.api+json" },
-    ""
-  ]);
-  store.load("products", "6", {}, null, callback, context);
-  server.respond();
-  t.equal(callback.callCount, 0);
-  callback.reset();
-  store.load("products", "6", callback, context);
-  server.respond();
-  t.equal(callback.callCount, 1);
-  t.equal(callback.firstCall.thisValue, context);
-  callback.reset();
-  store.load("products", "1", {}, null, callback, context);
-  server.respond();
-  t.equal(callback.callCount, 1);
-  t.equal(callback.firstCall.thisValue, context);
-  server.restore();
-});
-
-test("load must call callbacks with the context provided", function (t) {
-  var server = sinon.fakeServer.create({ autoRespond: false });
-  var adapter = new Store.AjaxAdapter();
-  var store = new Store(adapter);
-  var callback = sinon.spy();
-  var context = {};
-  t.plan(4);
-  t.timeoutAfter(1000);
-  store.define("products", {});
-  server.respondWith("GET", "/products/6", [
-    200,
-    { "Content-Type": "application/vnd.api+json" },
-    JSON.stringify({
-      data: { type: "products", id: "6" }
-    })
-  ]);
-  server.respondWith("GET", "/products/1", [
-    500,
-    { "Content-Type": "application/vnd.api+json" },
-    ""
-  ]);
-  store.load("products", "6", {}, callback, context);
-  server.respond();
-  t.equal(callback.callCount, 1);
-  t.equal(callback.firstCall.thisValue, context);
-  callback.reset();
-  store.load("products", "1", {}, null, callback, context);
-  server.respond();
-  t.equal(callback.callCount, 1);
-  t.equal(callback.firstCall.thisValue, context);
   server.restore();
 });
 
@@ -286,7 +216,7 @@ test("load must use the options if they're provided", function (t) {
     sort: "age,name,-created",
     page: 1,
     filter: "foo"
-  }, function (products) {
+  }).subscribe(function (products) {
     t.pass("returns a successful response");
   }, function (error) {
     t.fail(error);

@@ -30,6 +30,6 @@
   },
   "dependencies": {
     "array.prototype.find": "^1.0.0",
-    "rx-lite": "^3.1.2"
+    "rx": "^4.0.0"
   }
 }

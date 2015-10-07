@@ -18,7 +18,7 @@ test("destroy must delete a resource from the server and remove it from the stor
     id: "6"
   });
   t.equal(store.find("products").length, 1);
-  store.destroy("products", "6", function () {
+  store.destroy("products", "6").subscribe(function () {
     t.equal(store.find("products").length, 0);
   });
   server.respond();
@@ -44,7 +44,7 @@ test("destroy must handle 500 errors for failed attempts", function (t) {
     id: "6"
   });
   t.equal(store.find("products").length, 1);
-  store.destroy("products", "6", function () {
+  store.destroy("products", "6").subscribe(function () {
     t.fail("must not call the success callback");
   }, function () {
     t.equal(store.find("products").length, 1);
@@ -67,7 +67,7 @@ test("destroy must use the adapter's 'base' config if present", function (t) {
   ]);
   store.add({ type: "products", id: "2" });
   t.equal(store.find("products").length, 1);
-  store.destroy("products", "2", function () {
+  store.destroy("products", "2").subscribe(function () {
     t.equal(store.find("products").length, 0);
   });
   server.respond();
@@ -87,77 +87,11 @@ test("destroy must call the error callback if an error is raised during the proc
     { "Content-Type": "application/vnd.api+json" },
     ""
   ]);
-  store.destroy("products", "1", function () {
+  store.destroy("products", "1").subscribe(function () {
     throw new Error();
   }, callback);
   server.respond();
   t.equal(callback.callCount, 1);
-  server.restore();
-});
-
-test("destroy must handle missing success or error callbacks", function (t) {
-  var server = sinon.fakeServer.create({ autoRespond: false });
-  var adapter = new Store.AjaxAdapter();
-  var store = new Store(adapter);
-  var callback = sinon.spy();
-  var context = {};
-  t.plan(5);
-  t.timeoutAfter(1000);
-  store.define("products", {});
-  server.respondWith("DELETE", "/products/6", [
-    204,
-    { "Content-Type": "application/vnd.api+json" },
-    ""
-  ]);
-  server.respondWith("DELETE", "/products/1", [
-    500,
-    { "Content-Type": "application/vnd.api+json" },
-    ""
-  ]);
-  store.destroy("products", "6", null, callback, context);
-  server.respond();
-  t.equal(callback.callCount, 0);
-  callback.reset();
-  store.destroy("products", "6", callback, context);
-  server.respond();
-  t.equal(callback.callCount, 1);
-  t.equal(callback.firstCall.thisValue, context);
-  callback.reset();
-  store.destroy("products", "1", null, callback, context);
-  server.respond();
-  t.equal(callback.callCount, 1);
-  t.equal(callback.firstCall.thisValue, context);
-  server.restore();
-});
-
-test("destroy must call callbacks with the context provided", function (t) {
-  var server = sinon.fakeServer.create({ autoRespond: false });
-  var adapter = new Store.AjaxAdapter();
-  var store = new Store(adapter);
-  var callback = sinon.spy();
-  var context = {};
-  t.plan(4);
-  t.timeoutAfter(1000);
-  store.define("products", {});
-  server.respondWith("DELETE", "/products/6", [
-    204,
-    { "Content-Type": "application/vnd.api+json" },
-    ""
-  ]);
-  server.respondWith("DELETE", "/products/1", [
-    500,
-    { "Content-Type": "application/vnd.api+json" },
-    ""
-  ]);
-  store.destroy("products", "6", callback, context);
-  server.respond();
-  t.equal(callback.callCount, 1);
-  t.equal(callback.firstCall.thisValue, context);
-  callback.reset();
-  store.destroy("products", "1", null, callback, context);
-  server.respond();
-  t.equal(callback.callCount, 1);
-  t.equal(callback.firstCall.thisValue, context);
   server.restore();
 });
 

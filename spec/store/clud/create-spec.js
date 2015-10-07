@@ -11,17 +11,24 @@ test("create must throw an error if it is called when there isn't an adapter", f
 });
 
 test("create must call the create method prodvided by the adapter", function (t) {
-  var adatper = { create: sinon.spy() };
+  var a = {};
+  var adatper = {
+    create: sinon.spy(function () {
+      return a;
+    })
+  };
   var store = new Store(adatper);
   var type = "foo";
   var partial = {};
   var options = {};
-  var success = function () {};
-  var error = function () {};
-  var context = {};
-  t.plan(2);
+  var result;
+  t.plan(6);
   t.doesNotThrow(function () {
-    store.create(type, partial, options, success, error, context);
+    result = store.create(type, partial, options);
   }, "should not throw an error");
-  t.ok(adatper.create.calledWith(store, type, partial, options, success, error, context), "should call adapter with the same params");
+  t.equal(adatper.create.lastCall.args[0], store);
+  t.equal(adatper.create.lastCall.args[1], type);
+  t.equal(adatper.create.lastCall.args[2], partial);
+  t.equal(adatper.create.lastCall.args[3], options);
+  t.equal(result, a);
 });
