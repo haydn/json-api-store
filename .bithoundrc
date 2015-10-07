@@ -1,6 +1,6 @@
 {
   "ignore": [
-    "dist",
-    "docs"
+    "dist/**",
+    "docs/**"
   ]
 }
