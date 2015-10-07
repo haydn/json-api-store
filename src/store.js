@@ -691,4 +691,5 @@ export default class Store {
 
 }
 
+Store.Rx = Rx;
 Store.AjaxAdapter = AjaxAdapter;
