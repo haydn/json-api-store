@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../">
+  <title data-ice="title">src/ajax.js | API Document</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  
+  
+</head>
+<body class="layout-container">
+
+<header>
+  <a href="./">Home</a>
+  <a href="identifiers.html">Identifier</a>
+  <a href="source.html">Source</a>
+  
+  <a data-ice="repoURL" href="https://github.com/haydn/json-api-store" class="repo-url-github">Repository</a>
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+</header>
+
+<nav class="navigation" data-ice="nav"><div data-ice="classWrap">
+  <h2>Class</h2>
+  <ul>
+    
+  <li data-ice="classDoc"><span><a href="class/src/ajax-adapter.js~AjaxAdapter.html">AjaxAdapter</a></span></li>
+<li data-ice="classDoc"><span><a href="class/src/store.js~Store.html">Store</a></span></li>
+</ul>
+</div>
+
+
+
+<div data-ice="functionWrap">
+  <h2><a href="function/">Function</a></h2>
+  <ul>
+    
+  <li data-ice="functionDoc"><span><a href="function/index.html#static-function-ajax">ajax</a></span></li>
+</ul>
+</div>
+
+
+
+
+
+
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">src/ajax.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">import Rx from &quot;rx&quot;;
+
+/**
+ *
+ * Derived from RxJS-DOM, Copyright (c) Microsoft Open Technologies, Inc:
+ *
+ * https://github.com/Reactive-Extensions/RxJS-DOM
+ *
+ * The original source file can be viewed here:
+ *
+ * https://github.com/Reactive-Extensions/RxJS-DOM/blob/fdb169c8bd1612318d530e6e54074b1c9e537906/src/ajax.js
+ *
+ * Licensed under the Apache License, Version 2.0:
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Modifications from original:
+ *
+ * - extracted from &quot;Rx.DOM&quot; namespace
+ * - minor eslinter cleanup (&quot;var&quot; to &quot;let&quot; etc)
+ * - addition of &quot;auto&quot; responseType
+ *
+ */
+
+var root = (typeof window !== &quot;undefined&quot; &amp;&amp; window) || this;
+
+// Gets the proper XMLHttpRequest for support for older IE
+function getXMLHttpRequest() {
+  if (root.XMLHttpRequest) {
+    return new root.XMLHttpRequest();
+  } else {
+    let progId;
+    try {
+      let progIds = [&apos;Msxml2.XMLHTTP&apos;, &apos;Microsoft.XMLHTTP&apos;, &apos;Msxml2.XMLHTTP.4.0&apos;];
+      for(let i = 0; i &lt; 3; i++) {
+        try {
+          progId = progIds[i];
+          if (new root.ActiveXObject(progId)) {
+            break;
+          }
+        } catch(e) { }
+      }
+      return new root.ActiveXObject(progId);
+    } catch (e) {
+      throw new Error(&apos;XMLHttpRequest is not supported by your browser&apos;);
+    }
+  }
+}
+
+// Get CORS support even for older IE
+function getCORSRequest() {
+  var xhr = new root.XMLHttpRequest();
+  if (&apos;withCredentials&apos; in xhr) {
+    return xhr;
+  } else if (!!root.XDomainRequest) {
+    return new XDomainRequest();
+  } else {
+    throw new Error(&apos;CORS is not supported by your browser&apos;);
+  }
+}
+
+function normalizeAjaxSuccessEvent(e, xhr, settings) {
+  var response = (&apos;response&apos; in xhr) ? xhr.response : xhr.responseText;
+  if (settings.responseType === &apos;auto&apos;) {
+    try {
+      response = JSON.parse(response);
+    } catch (e) {}
+  } else {
+    response = settings.responseType === &apos;json&apos; ? JSON.parse(response) : response;
+  }
+  return {
+    response: response,
+    status: xhr.status,
+    responseType: xhr.responseType,
+    xhr: xhr,
+    originalEvent: e
+  };
+}
+
+function normalizeAjaxErrorEvent(e, xhr, type) {
+  return {
+    type: type,
+    status: xhr.status,
+    xhr: xhr,
+    originalEvent: e
+  };
+}
+
+/**
+ * Creates an observable for an Ajax request with either a settings object with url, headers, etc or a string for a URL.
+ *
+ * @example
+ *   source = ajax(&apos;/products&apos;);
+ *   source = ajax({ url: &apos;products&apos;, method: &apos;GET&apos; });
+ *
+ * @param {Object} settings Can be one of the following:
+ *
+ *  A string of the URL to make the Ajax call.
+ *  An object with the following properties
+ *   - url: URL of the request
+ *   - body: The body of the request
+ *   - method: Method of the request, such as GET, POST, PUT, PATCH, DELETE
+ *   - async: Whether the request is async
+ *   - headers: Optional headers
+ *   - crossDomain: true if a cross domain request, else false
+ *   - responseType: &quot;text&quot; (default), &quot;json&quot; or &quot;auto&quot;
+ *
+ * @returns {Observable} An observable sequence containing the XMLHttpRequest.
+*/
+export default function (options) {
+  var settings = {
+    method: &apos;GET&apos;,
+    crossDomain: false,
+    async: true,
+    headers: {},
+    responseType: &apos;text&apos;,
+    createXHR: function(){
+      return this.crossDomain ? getCORSRequest() : getXMLHttpRequest();
+    },
+    normalizeError: normalizeAjaxErrorEvent,
+    normalizeSuccess: normalizeAjaxSuccessEvent
+  };
+
+  if(typeof options === &apos;string&apos;) {
+    settings.url = options;
+  } else {
+    for(let prop in options) {
+      if(hasOwnProperty.call(options, prop)) {
+        settings[prop] = options[prop];
+      }
+    }
+  }
+
+  let normalizeError = settings.normalizeError;
+  let normalizeSuccess = settings.normalizeSuccess;
+
+  if (!settings.crossDomain &amp;&amp; !settings.headers[&apos;X-Requested-With&apos;]) {
+    settings.headers[&apos;X-Requested-With&apos;] = &apos;XMLHttpRequest&apos;;
+  }
+  settings.hasContent = settings.body !== undefined;
+
+  return new Rx.AnonymousObservable(function (observer) {
+    var isDone = false;
+    var xhr;
+
+    var processResponse = function(xhr, e){
+      var status = xhr.status === 1223 ? 204 : xhr.status;
+      if ((status &gt;= 200 &amp;&amp; status &lt;= 300) || status === 0 || status === &apos;&apos;) {
+        observer.onNext(normalizeSuccess(e, xhr, settings));
+        observer.onCompleted();
+      } else {
+        observer.onError(normalizeError(e, xhr, &apos;error&apos;));
+      }
+      isDone = true;
+    };
+
+    try {
+      xhr = settings.createXHR();;
+    } catch (err) {
+      observer.onError(err);
+    }
+
+    try {
+      if (settings.user) {
+        xhr.open(settings.method, settings.url, settings.async, settings.user, settings.password);
+      } else {
+        xhr.open(settings.method, settings.url, settings.async);
+      }
+
+      let headers = settings.headers;
+      for (let header in headers) {
+        if (hasOwnProperty.call(headers, header)) {
+          xhr.setRequestHeader(header, headers[header]);
+        }
+      }
+
+      if(!!xhr.upload || (!(&apos;withCredentials&apos; in xhr) &amp;&amp; !!root.XDomainRequest)) {
+        xhr.onload = function(e) {
+          if(settings.progressObserver) {
+            settings.progressObserver.onNext(e);
+            settings.progressObserver.onCompleted();
+          }
+          processResponse(xhr, e);
+        };
+
+        if(settings.progressObserver) {
+          xhr.onprogress = function(e) {
+            settings.progressObserver.onNext(e);
+          };
+        }
+
+        xhr.onerror = function(e) {
+          if (settings.progressObserver) {
+            settings.progressObserver.onError(e);
+          }
+          observer.onError(normalizeError(e, xhr, &apos;error&apos;));
+          isDone = true;
+        };
+
+        xhr.onabort = function(e) {
+          if (settings.progressObserver) {
+            settings.progressObserver.onError(e);
+          }
+          observer.onError(normalizeError(e, xhr, &apos;abort&apos;));
+          isDone = true;
+        };
+      } else {
+
+        xhr.onreadystatechange = function (e) {
+          if (xhr.readyState === 4) {
+            processResponse(xhr, e);
+          }
+        };
+      }
+
+      xhr.send(settings.hasContent &amp;&amp; settings.body || null);
+    } catch (e) {
+      observer.onError(e);
+    }
+
+    return function () {
+      if (!isDone &amp;&amp; xhr.readyState !== 4) { xhr.abort(); }
+    };
+  });
+};
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.2.6)</span></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

@@ -12,6 +12,12 @@ window.esdocSearchIndex = [
     "class"
   ],
   [
+    "json-api-store/src/ajax.js~ajax",
+    "function/index.html#static-function-ajax",
+    "<span>ajax</span> <span class=\"search-result-import-path\">json-api-store/src/ajax.js</span>",
+    "function"
+  ],
+  [
     "builtinexternal/ecmascriptexternal.js~array",
     "external/index.html",
     "BuiltinExternal/ECMAScriptExternal.js~Array",
@@ -372,6 +378,12 @@ window.esdocSearchIndex = [
     "method"
   ],
   [
+    "src/ajax.js",
+    "file/src/ajax.js.html",
+    "src/ajax.js",
+    "file"
+  ],
+  [
     "src/store.js",
     "file/src/store.js.html",
     "src/store.js",
@@ -420,9 +432,21 @@ window.esdocSearchIndex = [
     "method"
   ],
   [
+    "src/store.js~store#findall",
+    "class/src/store.js~Store.html#instance-method-findAll",
+    "src/store.js~Store#findAll",
+    "method"
+  ],
+  [
     "src/store.js~store#load",
     "class/src/store.js~Store.html#instance-method-load",
     "src/store.js~Store#load",
+    "method"
+  ],
+  [
+    "src/store.js~store#loadall",
+    "class/src/store.js~Store.html#instance-method-loadAll",
+    "src/store.js~Store#loadAll",
     "method"
   ],
   [

@@ -38,7 +38,13 @@
 
 
 
-
+<div data-ice="functionWrap">
+  <h2><a href="function/">Function</a></h2>
+  <ul>
+    
+  <li data-ice="functionDoc"><span><a href="function/index.html#static-function-ajax">ajax</a></span></li>
+</ul>
+</div>
 
 
 
@@ -49,7 +55,7 @@
 
 <div class="content" data-ice="content"><h1 data-ice="title">src/store.js</h1>
 <pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">import &quot;array.prototype.find&quot;;
-import Rx from &quot;rx-lite&quot;;
+import Rx from &quot;rx&quot;;
 import AjaxAdapter from &quot;./ajax-adapter&quot;;
 
 export default class Store {
@@ -287,20 +293,19 @@ export default class Store {
    * @since 0.5.0
    * @param {!string} type - Type of resource.
    * @param {!Object} partial - Data to create the resource with.
-   * @param {function} [success] - Callback on success.
-   * @param {function} [error] - Callback on error.
-   * @param {Object} [context] - Context for the callbacks.
+   * @param {Object} [options] - Options to pass to the adapter.
+   * @return {Rx.Observable}
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
    * let store = new Store(adpater);
-   * store.create(&quot;product&quot;, { title: &quot;A Book&quot; }, (product) =&gt; {
+   * store.create(&quot;product&quot;, { title: &quot;A Book&quot; }).subscribe((product) =&gt; {
    *   console.log(product.title);
    * });
    */
-  create(type, partial, success, error, context) {
+  create(type, partial, options) {
     if (this._adapter) {
-      this._adapter.create(this, type, partial, success, error, context);
+      return this._adapter.create(this, type, partial, options);
     } else {
       throw new Error(&quot;Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`&quot;);
     }
@@ -336,36 +341,34 @@ export default class Store {
    * @since 0.5.0
    * @param {!string} type - Type of resource.
    * @param {!string} id - ID of resource.
-   * @param {function} [success] - Callback on success.
-   * @param {function} [error] - Callback on error.
-   * @param {Object} [context] - Context for the callbacks.
+   * @param {Object} [options] - Options to pass to the adapter.
+   * @return {Rx.Observable}
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
    * let store = new Store(adpater);
-   * store.destroy(&quot;product&quot;, &quot;1&quot;, () =&gt; {
+   * store.destroy(&quot;product&quot;, &quot;1&quot;).subscribe(() =&gt; {
    *   console.log(&quot;Destroyed!&quot;);
    * });
    */
-  destroy(type, id, success, error, context) {
+  destroy(type, id, options) {
     if (this._adapter) {
-      this._adapter.destroy(this, type, id, success, error, context);
+      return this._adapter.destroy(this, type, id, options);
     } else {
       throw new Error(&quot;Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`&quot;);
     }
   }
 
   /**
-   * Find a resource or entire collection of resources.
+   * Finds a resource by type and id.
    *
    * NOTE: If the resource hasn&apos;t been loaded via an add() or push() call it
    * will be automatically created when find is called.
    *
    * @since 0.1.0
-   * @param {!string} type - Type of the resource(s) to find.
-   * @param {string} [id] - The id of the resource to find. If omitted all
-   *                        resources of the type will be returned.
-   * @return {Object|Object[]} - Either the resource or an array of resources.
+   * @param {!string} type - Type of the resource to find.
+   * @param {!string} id - The id of the resource to find.
+   * @return {Object} - The resource.
    */
   find(type, id) {
     if (type) {
@@ -390,7 +393,14 @@ export default class Store {
           }
           return this._data[type][id];
         } else {
-          return Object.keys(this._data[type]).map(x =&gt; this._data[type][x]);
+          // throw new TypeError(`You must provide an id`);
+          /*eslint-disable*/
+          console.warn([
+            &quot;Using the `store.find()` method to find an entire collection has been deprecated in favour of `store.findAll()`.&quot;,
+            &quot;For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.7.0&quot;
+          ].join(&quot;\n&quot;));
+          /*eslint-enable*/
+          return this.findAll(type);
         }
       } else {
         throw new TypeError(`Unknown type &apos;${type}&apos;`);
@@ -401,27 +411,81 @@ export default class Store {
   }
 
   /**
-   * Attempts to load the resource(s) through the adapter and adds it/them to
-   * the store if successful.
+   * Finds all the resources of a given type.
+   *
+   * @since 0.7.0
+   * @param {!string} type - Type of the resource to find.
+   * @return {Object[]} - An array of resources.
+   */
+  findAll(type) {
+    if (type) {
+      let definition = this._types[type];
+      if (definition) {
+        if (!this._data[type]) {
+          let collection = {};
+          definition._names.forEach(t =&gt; this._data[t] = collection);
+        }
+        return Object.keys(this._data[type]).map(x =&gt; this._data[type][x]);
+      } else {
+        throw new TypeError(`Unknown type &apos;${type}&apos;`);
+      }
+    } else {
+      throw new TypeError(`You must provide a type`);
+    }
+  }
+
+  /**
+   * Attempts to load the given resource through the adapter and adds it to the
+   * store if successful.
    *
    * @since 0.5.0
    * @param {!string} type - Type of resource.
-   * @param {!string} [id] - ID of resource.
-   * @param {Object} [options] - **NOT YET IMPLEMENTED** (this will include sorting, filtering and pagination options)
-   * @param {function} [success] - Callback on success.
-   * @param {function} [error] - Callback on error.
-   * @param {Object} [context] - Context for the callbacks.
+   * @param {!string} id - ID of resource.
+   * @param {Object} [options] - Options to pass to the adapter.
+   * @return {Rx.Observable}
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
    * let store = new Store(adpater);
-   * store.load(&quot;product&quot;, &quot;1&quot;, (product) =&gt; {
+   * store.load(&quot;products&quot;, &quot;1&quot;).subscribe((product) =&gt; {
    *   console.log(product.title);
    * });
    */
-  load(type, id, options, success, error, context) {
+  load(type, id, options) {
+    if (!id || typeof id === &quot;object&quot;) {
+      /*eslint-disable*/
+      console.warn([
+        &quot;Using the `store.load()` method to load an entire collection has been deprecated in favour of `store.loadAll()`.&quot;,
+        &quot;For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.7.0&quot;
+      ].join(&quot;\n&quot;));
+      /*eslint-enable*/
+    }
     if (this._adapter) {
-      this._adapter.load(this, type, id, options, success, error, context);
+      return this._adapter.load(this, type, id, options);
+    } else {
+      throw new Error(&quot;Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`&quot;);
+    }
+  }
+
+  /**
+   * Attempts to load all the resources of the given type through the adapter
+   * and adds them to the store if successful.
+   *
+   * @since 0.7.0
+   * @param {!string} type - Type of resource.
+   * @param {Object} [options] - Options to pass to the adapter.
+   * @return {Rx.Observable}
+   *
+   * @example
+   * let adapter = new Store.AjaxAdapter();
+   * let store = new Store(adpater);
+   * store.loadAll(&quot;products&quot;).subscribe((products) =&gt; {
+   *   console.log(products);
+   * });
+   */
+  loadAll(type, options) {
+    if (this._adapter) {
+      return this._adapter.load(this, type, null, options);
     } else {
       throw new Error(&quot;Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`&quot;);
     }
@@ -438,10 +502,12 @@ export default class Store {
    * @param {function} callback - Function originally passed to on().
    */
   off(event, type, id, callback) {
+    /*eslint-disable*/
     console.warn([
       &quot;The `store.off()` method has been deprecated in favour of `store.observable`.&quot;,
       &quot;For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.6.0&quot;
     ].join(&quot;\n&quot;));
+    /*eslint-enable*/
     if (event === &quot;added&quot; || event === &quot;updated&quot; || event === &quot;removed&quot;) {
       if (this._types[type]) {
         if (id &amp;&amp; ({}).toString.call(id) === &apos;[object Function]&apos;) {
@@ -470,10 +536,12 @@ export default class Store {
    * @param {Object} [context] - Context in which to call the callback.
    */
   on(event, type, id, callback, context) {
+    /*eslint-disable*/
     console.warn([
       &quot;The `store.on()` method has been deprecated in favour of `store.observable`.&quot;,
       &quot;For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.6.0&quot;
     ].join(&quot;\n&quot;));
+    /*eslint-enable*/
     if (event === &quot;added&quot; || event === &quot;updated&quot; || event === &quot;removed&quot;) {
       if (this._types[type]) {
         if (id &amp;&amp; ({}).toString.call(id) === &apos;[object Function]&apos;) {
@@ -562,20 +630,19 @@ export default class Store {
    * @param {!string} type - Type of resource.
    * @param {!string} id - ID of resource.
    * @param {!Object} partial - Data to update the resource with.
-   * @param {function} [success] - Callback on success.
-   * @param {function} [error] - Callback on error.
-   * @param {Object} [context] - Context for the callbacks.
+   * @param {Object} [options] - Options to pass to the adapter.
+   * @return {Rx.Observable}
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
    * let store = new Store(adpater);
-   * store.update(&quot;product&quot;, &quot;1&quot;, { title: &quot;foo&quot; }, (product) =&gt; {
+   * store.update(&quot;product&quot;, &quot;1&quot;, { title: &quot;foo&quot; }).subscribe((product) =&gt; {
    *   console.log(product.title);
    * });
    */
-  update(type, id, partial, success, error, context) {
+  update(type, id, partial, options) {
     if (this._adapter) {
-      this._adapter.update(this, type, id, partial, success, error, context);
+      return this._adapter.update(this, type, id, partial, options);
     } else {
       throw new Error(&quot;Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`&quot;);
     }
@@ -688,6 +755,7 @@ export default class Store {
 
 }
 
+Store.Rx = Rx;
 Store.AjaxAdapter = AjaxAdapter;
 </code></pre>
 

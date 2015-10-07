@@ -12,9 +12,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 require("array.prototype.find");
 
-var _rxLite = require("rx-lite");
+var _rx = require("rx");
 
-var _rxLite2 = _interopRequireDefault(_rxLite);
+var _rx2 = _interopRequireDefault(_rx);
 
 var _ajaxAdapter = require("./ajax-adapter");
 
@@ -146,7 +146,7 @@ var Store = (function () {
 
     this._adapter = adapter;
     this._data = {};
-    this._subject = new _rxLite2["default"].Subject();
+    this._subject = new _rx2["default"].Subject();
     this._subscriptions = {};
     this._types = {};
 
@@ -281,22 +281,21 @@ var Store = (function () {
      * @since 0.5.0
      * @param {!string} type - Type of resource.
      * @param {!Object} partial - Data to create the resource with.
-     * @param {function} [success] - Callback on success.
-     * @param {function} [error] - Callback on error.
-     * @param {Object} [context] - Context for the callbacks.
+     * @param {Object} [options] - Options to pass to the adapter.
+     * @return {Rx.Observable}
      *
      * @example
      * let adapter = new Store.AjaxAdapter();
      * let store = new Store(adpater);
-     * store.create("product", { title: "A Book" }, (product) => {
+     * store.create("product", { title: "A Book" }).subscribe((product) => {
      *   console.log(product.title);
      * });
      */
   }, {
     key: "create",
-    value: function create(type, partial, success, error, context) {
+    value: function create(type, partial, options) {
       if (this._adapter) {
-        this._adapter.create(this, type, partial, success, error, context);
+        return this._adapter.create(this, type, partial, options);
       } else {
         throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
       }
@@ -336,38 +335,36 @@ var Store = (function () {
      * @since 0.5.0
      * @param {!string} type - Type of resource.
      * @param {!string} id - ID of resource.
-     * @param {function} [success] - Callback on success.
-     * @param {function} [error] - Callback on error.
-     * @param {Object} [context] - Context for the callbacks.
+     * @param {Object} [options] - Options to pass to the adapter.
+     * @return {Rx.Observable}
      *
      * @example
      * let adapter = new Store.AjaxAdapter();
      * let store = new Store(adpater);
-     * store.destroy("product", "1", () => {
+     * store.destroy("product", "1").subscribe(() => {
      *   console.log("Destroyed!");
      * });
      */
   }, {
     key: "destroy",
-    value: function destroy(type, id, success, error, context) {
+    value: function destroy(type, id, options) {
       if (this._adapter) {
-        this._adapter.destroy(this, type, id, success, error, context);
+        return this._adapter.destroy(this, type, id, options);
       } else {
         throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
       }
     }
 
     /**
-     * Find a resource or entire collection of resources.
+     * Finds a resource by type and id.
      *
      * NOTE: If the resource hasn't been loaded via an add() or push() call it
      * will be automatically created when find is called.
      *
      * @since 0.1.0
-     * @param {!string} type - Type of the resource(s) to find.
-     * @param {string} [id] - The id of the resource to find. If omitted all
-     *                        resources of the type will be returned.
-     * @return {Object|Object[]} - Either the resource or an array of resources.
+     * @param {!string} type - Type of the resource to find.
+     * @param {!string} id - The id of the resource to find.
+     * @return {Object} - The resource.
      */
   }, {
     key: "find",
@@ -403,10 +400,12 @@ var Store = (function () {
                 v: _this5._data[type][id]
               };
             } else {
+              // throw new TypeError(`You must provide an id`);
+              /*eslint-disable*/
+              console.warn(["Using the `store.find()` method to find an entire collection has been deprecated in favour of `store.findAll()`.", "For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.7.0"].join("\n"));
+              /*eslint-enable*/
               return {
-                v: Object.keys(_this5._data[type]).map(function (x) {
-                  return _this5._data[type][x];
-                })
+                v: _this5.findAll(type)
               };
             }
           } else {
@@ -421,29 +420,92 @@ var Store = (function () {
     }
 
     /**
-     * Attempts to load the resource(s) through the adapter and adds it/them to
-     * the store if successful.
+     * Finds all the resources of a given type.
+     *
+     * @since 0.7.0
+     * @param {!string} type - Type of the resource to find.
+     * @return {Object[]} - An array of resources.
+     */
+  }, {
+    key: "findAll",
+    value: function findAll(type) {
+      var _this6 = this;
+
+      if (type) {
+        var definition = this._types[type];
+        if (definition) {
+          if (!this._data[type]) {
+            (function () {
+              var collection = {};
+              definition._names.forEach(function (t) {
+                return _this6._data[t] = collection;
+              });
+            })();
+          }
+          return Object.keys(this._data[type]).map(function (x) {
+            return _this6._data[type][x];
+          });
+        } else {
+          throw new TypeError("Unknown type '" + type + "'");
+        }
+      } else {
+        throw new TypeError("You must provide a type");
+      }
+    }
+
+    /**
+     * Attempts to load the given resource through the adapter and adds it to the
+     * store if successful.
      *
      * @since 0.5.0
      * @param {!string} type - Type of resource.
-     * @param {!string} [id] - ID of resource.
-     * @param {Object} [options] - **NOT YET IMPLEMENTED** (this will include sorting, filtering and pagination options)
-     * @param {function} [success] - Callback on success.
-     * @param {function} [error] - Callback on error.
-     * @param {Object} [context] - Context for the callbacks.
+     * @param {!string} id - ID of resource.
+     * @param {Object} [options] - Options to pass to the adapter.
+     * @return {Rx.Observable}
      *
      * @example
      * let adapter = new Store.AjaxAdapter();
      * let store = new Store(adpater);
-     * store.load("product", "1", (product) => {
+     * store.load("products", "1").subscribe((product) => {
      *   console.log(product.title);
      * });
      */
   }, {
     key: "load",
-    value: function load(type, id, options, success, error, context) {
+    value: function load(type, id, options) {
+      if (!id || typeof id === "object") {
+        /*eslint-disable*/
+        console.warn(["Using the `store.load()` method to load an entire collection has been deprecated in favour of `store.loadAll()`.", "For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.7.0"].join("\n"));
+        /*eslint-enable*/
+      }
       if (this._adapter) {
-        this._adapter.load(this, type, id, options, success, error, context);
+        return this._adapter.load(this, type, id, options);
+      } else {
+        throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
+      }
+    }
+
+    /**
+     * Attempts to load all the resources of the given type through the adapter
+     * and adds them to the store if successful.
+     *
+     * @since 0.7.0
+     * @param {!string} type - Type of resource.
+     * @param {Object} [options] - Options to pass to the adapter.
+     * @return {Rx.Observable}
+     *
+     * @example
+     * let adapter = new Store.AjaxAdapter();
+     * let store = new Store(adpater);
+     * store.loadAll("products").subscribe((products) => {
+     *   console.log(products);
+     * });
+     */
+  }, {
+    key: "loadAll",
+    value: function loadAll(type, options) {
+      if (this._adapter) {
+        return this._adapter.load(this, type, null, options);
       } else {
         throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
       }
@@ -462,7 +524,9 @@ var Store = (function () {
   }, {
     key: "off",
     value: function off(event, type, id, callback) {
+      /*eslint-disable*/
       console.warn(["The `store.off()` method has been deprecated in favour of `store.observable`.", "For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.6.0"].join("\n"));
+      /*eslint-enable*/
       if (event === "added" || event === "updated" || event === "removed") {
         if (this._types[type]) {
           if (id && ({}).toString.call(id) === '[object Function]') {
@@ -493,9 +557,11 @@ var Store = (function () {
   }, {
     key: "on",
     value: function on(event, type, id, callback, context) {
-      var _this6 = this;
+      var _this7 = this;
 
+      /*eslint-disable*/
       console.warn(["The `store.on()` method has been deprecated in favour of `store.observable`.", "For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.6.0"].join("\n"));
+      /*eslint-enable*/
       if (event === "added" || event === "updated" || event === "removed") {
         if (this._types[type]) {
           if (id && ({}).toString.call(id) === '[object Function]') {
@@ -505,7 +571,7 @@ var Store = (function () {
               return e.name === event;
             });
             subscription = subscription.filter(function (e) {
-              return _this6._types[type]._names.indexOf(e.type) !== -1;
+              return _this7._types[type]._names.indexOf(e.type) !== -1;
             });
             if (id) {
               subscription = subscription.filter(function (e) {
@@ -513,14 +579,14 @@ var Store = (function () {
               });
             }
             subscription = subscription.map(function (e) {
-              return _this6.find(e.type, e.id);
+              return _this7.find(e.type, e.id);
             });
             this._subscriptions[event] = this._subscriptions[event] || {};
             if (!this._subscriptions[event][type]) {
               (function () {
                 var obj = {};
-                _this6._types[type]._names.forEach(function (type) {
-                  _this6._subscriptions[event][type] = obj;
+                _this7._types[type]._names.forEach(function (type) {
+                  _this7._subscriptions[event][type] = obj;
                 });
               })();
             }
@@ -545,18 +611,18 @@ var Store = (function () {
   }, {
     key: "push",
     value: function push(root) {
-      var _this7 = this;
+      var _this8 = this;
 
       if (root.data.constructor === Array) {
         root.data.forEach(function (x) {
-          return _this7.add(x);
+          return _this8.add(x);
         });
       } else {
         this.add(root.data);
       }
       if (root.included) {
         root.included.forEach(function (x) {
-          return _this7.add(x);
+          return _this8.add(x);
         });
       }
     }
@@ -572,7 +638,7 @@ var Store = (function () {
   }, {
     key: "remove",
     value: function remove(type, id) {
-      var _this8 = this;
+      var _this9 = this;
 
       if (type) {
         if (this._types[type]) {
@@ -589,7 +655,7 @@ var Store = (function () {
             }
           } else {
             Object.keys(this._data[type]).forEach(function (id) {
-              return _this8.remove(type, id);
+              return _this9.remove(type, id);
             });
           }
         } else {
@@ -608,22 +674,21 @@ var Store = (function () {
      * @param {!string} type - Type of resource.
      * @param {!string} id - ID of resource.
      * @param {!Object} partial - Data to update the resource with.
-     * @param {function} [success] - Callback on success.
-     * @param {function} [error] - Callback on error.
-     * @param {Object} [context] - Context for the callbacks.
+     * @param {Object} [options] - Options to pass to the adapter.
+     * @return {Rx.Observable}
      *
      * @example
      * let adapter = new Store.AjaxAdapter();
      * let store = new Store(adpater);
-     * store.update("product", "1", { title: "foo" }, (product) => {
+     * store.update("product", "1", { title: "foo" }).subscribe((product) => {
      *   console.log(product.title);
      * });
      */
   }, {
     key: "update",
-    value: function update(type, id, partial, success, error, context) {
+    value: function update(type, id, partial, options) {
       if (this._adapter) {
-        this._adapter.update(this, type, id, partial, success, error, context);
+        return this._adapter.update(this, type, id, partial, options);
       } else {
         throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
       }
@@ -631,7 +696,7 @@ var Store = (function () {
   }, {
     key: "_addField",
     value: function _addField(object, resource, definition, fieldName) {
-      var _this9 = this;
+      var _this10 = this;
 
       var field = definition[fieldName];
       var newValue = field.deserialize.call(this, object, fieldName);
@@ -646,11 +711,11 @@ var Store = (function () {
         } else if (field.type === "has-many") {
           resource[fieldName].forEach(function (r) {
             if (resource[fieldName].indexOf(r) !== -1) {
-              _this9._removeInverseRelationship(resource, fieldName, r, field);
+              _this10._removeInverseRelationship(resource, fieldName, r, field);
             }
           });
           newValue.forEach(function (r) {
-            _this9._addInverseRelationship(resource, fieldName, r, field);
+            _this10._addInverseRelationship(resource, fieldName, r, field);
           });
         }
         resource[fieldName] = newValue;
@@ -687,11 +752,11 @@ var Store = (function () {
   }, {
     key: "_remove",
     value: function _remove(resource) {
-      var _this10 = this;
+      var _this11 = this;
 
       resource._dependents.forEach(function (dependent) {
-        var dependentResource = _this10._data[dependent.type][dependent.id];
-        switch (_this10._types[dependent.type][dependent.fieldName].type) {
+        var dependentResource = _this11._data[dependent.type][dependent.id];
+        switch (_this11._types[dependent.type][dependent.fieldName].type) {
           case "has-one":
             {
               dependentResource[dependent.fieldName] = null;
@@ -753,5 +818,6 @@ var Store = (function () {
 
 exports["default"] = Store;
 
+Store.Rx = _rx2["default"];
 Store.AjaxAdapter = _ajaxAdapter2["default"];
 module.exports = exports["default"];

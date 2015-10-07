@@ -38,7 +38,13 @@
 
 
 
-
+<div data-ice="functionWrap">
+  <h2><a href="function/">Function</a></h2>
+  <ul>
+    
+  <li data-ice="functionDoc"><span><a href="function/index.html#static-function-ajax">ajax</a></span></li>
+</ul>
+</div>
 
 
 
@@ -47,7 +53,7 @@
 
 </nav>
 
-<div class="content" data-ice="content"><div data-ice="index" class="github-markdown"><h1 id="json-api-store-build-status-https-travis-ci-org-haydn-json-api-store-svg-branch-master-https-travis-ci-org-haydn-json-api-store-npm-version-https-badge-fury-io-js-json-api-store-svg-http-badge-fury-io-js-json-api-store-">JSON API Store <a href="https://travis-ci.org/haydn/json-api-store"><img src="https://travis-ci.org/haydn/json-api-store.svg?branch=master" alt="Build Status"></a> <a href="http://badge.fury.io/js/json-api-store"><img src="https://badge.fury.io/js/json-api-store.svg" alt="NPM Version"></a></h1>
+<div class="content" data-ice="content"><div data-ice="index" class="github-markdown"><h1 id="json-api-store-build-status-https-travis-ci-org-haydn-json-api-store-svg-branch-master-https-travis-ci-org-haydn-json-api-store-npm-version-https-badge-fury-io-js-json-api-store-svg-http-badge-fury-io-js-json-api-store-bithound-score-https-www-bithound-io-github-haydn-json-api-store-badges-score-svg-https-www-bithound-io-github-haydn-json-api-store-">JSON API Store <a href="https://travis-ci.org/haydn/json-api-store"><img src="https://travis-ci.org/haydn/json-api-store.svg?branch=master" alt="Build Status"></a> <a href="http://badge.fury.io/js/json-api-store"><img src="https://badge.fury.io/js/json-api-store.svg" alt="NPM Version"></a> <a href="https://www.bithound.io/github/haydn/json-api-store"><img src="https://www.bithound.io/github/haydn/json-api-store/badges/score.svg" alt="bitHound Score"></a></h1>
 <p>An isomorphic JavaScript library that acts as an in memory data store for
 <a href="http://jsonapi.org">JSON API</a> data. Changes are
 broadcast using <a href="https://github.com/Reactive-Extensions/RxJS">RxJS</a>. Built to
@@ -78,7 +84,7 @@ store.observable.subscribe(function (event) {
 });
 
 // Load all the products.
-store.load(&quot;products&quot;, { include: [ &quot;category&quot; ] }, function (products) {
+store.load(&quot;products&quot;, { include: &quot;category&quot; }, function (products) {
 
   products.length; // 1
   products[0].id; // &quot;1&quot;
