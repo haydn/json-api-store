@@ -6,7 +6,7 @@ export default class AjaxAdapter {
     this._base = (options && options.base) || "";
   };
 
-  create(store, type, partial) {
+  create(store, type, partial, options) {
 
     if (!store._types[type]) {
       throw new Error(`Unknown type '${type}'`);
@@ -22,10 +22,10 @@ export default class AjaxAdapter {
       },
       method: "POST",
       responseType: "auto",
-      url: this._getUrl(type)
-    }).do(event => store.push(event.response)).map(event => {
-      return store.find(event.response.data.type, event.response.data.id);
-    }).publish();
+      url: this._getUrl(type, null, options)
+    }).do(e => store.push(e.response))
+      .map(e => store.find(e.response.data.type, e.response.data.id))
+      .publish();
 
     source.connect();
 
@@ -33,7 +33,7 @@ export default class AjaxAdapter {
 
   }
 
-  destroy(store, type, id) {
+  destroy(store, type, id, options) {
 
     if (!store._types[type]) {
       throw new Error(`Unknown type '${type}'`);
@@ -46,8 +46,9 @@ export default class AjaxAdapter {
       },
       method: "DELETE",
       responseType: "auto",
-      url: this._getUrl(type, id)
-    }).do(() => store.remove(type, id)).publish();
+      url: this._getUrl(type, id, options)
+    }).do(() => store.remove(type, id))
+      .publish();
 
     source.connect();
 
@@ -73,9 +74,9 @@ export default class AjaxAdapter {
       method: "GET",
       responseType: "auto",
       url: this._getUrl(type, id, options)
-    }).do(event => store.push(event.response)).map(() => {
-      return id ? store.find(type, id) : store.find(type);
-    }).publish();
+    }).do(e => store.push(e.response))
+      .map(() => id ? store.find(type, id) : store.find(type))
+      .publish();
 
     source.connect();
 
@@ -83,7 +84,7 @@ export default class AjaxAdapter {
 
   }
 
-  update(store, type, id, partial) {
+  update(store, type, id, partial, options) {
 
     if (!store._types[type]) {
       throw new Error(`Unknown type '${type}'`);
@@ -101,7 +102,7 @@ export default class AjaxAdapter {
       },
       method: "PATCH",
       responseType: "auto",
-      url: this._getUrl(type, id)
+      url: this._getUrl(type, id, options)
     }).do(() => store.add(data))
       .map(() => store.find(type, id))
       .publish();

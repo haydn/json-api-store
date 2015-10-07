@@ -115,6 +115,38 @@ test("create must use the adapter's 'base' config if present", function (t) {
   server.restore();
 });
 
+test("create must use the options if they're provided", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  t.plan(1);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  server.respondWith("POST", "/products?fields[products]=title%2Cdescription&filter=foo&include=author%2Ccomments.user&page=1&sort=age%2Cname%2C-created", [
+    201,
+    { "Content-Type": "application/vnd.api+json" },
+    JSON.stringify({
+      data: { type: "products", id: "9" },
+      included: []
+    })
+  ]);
+  store.create("products", {}, {
+    include: "author,comments.user",
+    fields: {
+      products: "title,description"
+    },
+    sort: "age,name,-created",
+    page: 1,
+    filter: "foo"
+  }).subscribe(function (product) {
+    t.pass("returns a successful response");
+  }, function (error) {
+    t.fail(error);
+  });
+  server.respond();
+  server.restore();
+});
+
 test("create must throw an error if the type has not been defined", function (t) {
   var adapter = new Store.AjaxAdapter();
   var store = new Store(adapter);
