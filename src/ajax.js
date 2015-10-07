@@ -22,7 +22,7 @@ import Rx from "rx";
  *
  */
 
-var root = window;
+var root = (typeof window !== "undefined" && window) || this;
 
 // Gets the proper XMLHttpRequest for support for older IE
 function getXMLHttpRequest() {
