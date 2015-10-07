@@ -10,7 +10,7 @@ test("destroy must throw an error if it is called when there isn't an adapter", 
   }, /Adapter missing\. Specify an adapter when creating the store: `var store = new Store\(adapter\);`/);
 });
 
-test("destroy must call the destroy method prodvided by the adapter", function (t) {
+test("destroy must call the destroy method provided by the adapter", function (t) {
   var a = {};
   var adatper = {
     destroy: sinon.spy(function () {

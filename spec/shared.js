@@ -28,6 +28,7 @@ if (!Function.prototype.bind) {
 
 import "./store/clud/create-spec";
 import "./store/clud/destroy-spec";
+import "./store/clud/load-all-spec";
 import "./store/clud/load-spec";
 import "./store/clud/update-spec";
 import "./store/core/add-spec";

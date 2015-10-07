@@ -349,25 +349,55 @@ export default class Store {
   }
 
   /**
-   * Attempts to load the resource(s) through the adapter and adds it/them to
-   * the store if successful.
+   * Attempts to load the given resource through the adapter and adds it to the
+   * store if successful.
    *
    * @since 0.5.0
    * @param {!string} type - Type of resource.
-   * @param {!string} [id] - ID of resource.
+   * @param {!string} id - ID of resource.
    * @param {Object} [options] - Options to pass to the adapter.
    * @return {Rx.Observable}
    *
    * @example
    * let adapter = new Store.AjaxAdapter();
    * let store = new Store(adpater);
-   * store.load("product", "1").subscribe((product) => {
+   * store.load("products", "1").subscribe((product) => {
    *   console.log(product.title);
    * });
    */
   load(type, id, options) {
+    if (!id || typeof id === "object") {
+      console.warn([
+        "Using the `store.load()` method to load an entire collection has been deprecated in favour of `store.loadAll()`.",
+        "For more information see: https://github.com/haydn/json-api-store/releases/tag/v0.7.0"
+      ].join("\n"));
+    }
     if (this._adapter) {
       return this._adapter.load(this, type, id, options);
+    } else {
+      throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
+    }
+  }
+
+  /**
+   * Attempts to load all the resources of the given type through the adapter
+   * and adds them to the store if successful.
+   *
+   * @since 0.7.0
+   * @param {!string} type - Type of resource.
+   * @param {Object} [options] - Options to pass to the adapter.
+   * @return {Rx.Observable}
+   *
+   * @example
+   * let adapter = new Store.AjaxAdapter();
+   * let store = new Store(adpater);
+   * store.loadAll("products").subscribe((products) => {
+   *   console.log(products);
+   * });
+   */
+  loadAll(type, options) {
+    if (this._adapter) {
+      return this._adapter.load(this, type, null, options);
     } else {
       throw new Error("Adapter missing. Specify an adapter when creating the store: `var store = new Store(adapter);`");
     }

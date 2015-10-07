@@ -10,7 +10,7 @@ test("update must throw an error if update is called when there isn't an adapter
   }, /Adapter missing\. Specify an adapter when creating the store: `var store = new Store\(adapter\);`/);
 });
 
-test("update must call the update method prodvided by the adapter", function (t) {
+test("update must call the update method provided by the adapter", function (t) {
   var a = {};
   var adatper = {
     update: sinon.spy(function () {
