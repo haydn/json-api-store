@@ -1,4 +1,4 @@
-# JSON API Store [![Build Status](https://travis-ci.org/haydn/json-api-store.svg?branch=master)](https://travis-ci.org/haydn/json-api-store) [![NPM Version](https://badge.fury.io/js/json-api-store.svg)](http://badge.fury.io/js/json-api-store)
+# JSON API Store [![Build Status](https://travis-ci.org/haydn/json-api-store.svg?branch=master)](https://travis-ci.org/haydn/json-api-store) [![NPM Version](https://badge.fury.io/js/json-api-store.svg)](http://badge.fury.io/js/json-api-store) [![bitHound Score](https://www.bithound.io/github/haydn/json-api-store/badges/score.svg)](https://www.bithound.io/github/haydn/json-api-store)
 
 An isomorphic JavaScript library that acts as an in memory data store for
 [JSON API](http://jsonapi.org) data. Changes are
