@@ -5,6 +5,24 @@ An isomorphic JavaScript library that acts as an in memory data store for
 broadcast using [RxJS](https://github.com/Reactive-Extensions/RxJS). Built to
 work with [React](https://facebook.github.io/react/).
 
+## Installing
+
+#### NPM
+
+```
+npm i json-api-store
+```
+
+#### Bower
+
+```
+bower i json-api-store
+```
+
+#### Download
+
+To use directly in the browser you can grab the [store.prod.js](https://raw.githubusercontent.com/haydn/json-api-store/master/dist/store.prod.js) file.
+
 ## Usage
 
 ### Browser
@@ -35,7 +53,7 @@ store.observable.subscribe(function (event) {
 });
 
 // Load all the products.
-store.load("products", { include: "category" }, function (products) {
+store.loadAll("products", { include: "category" }).subscribe(function (products) {
 
   products.length; // 1
   products[0].id; // "1"
@@ -104,24 +122,12 @@ store.find("products", "1").category.title; // "Example Category"
 
 ## Documentation
 
-Full documentation is available on the website:
+Documentation is available on the website:
 
 http://particlesystem.com/json-api-store/
 
-## Installing
+## Changelog
 
-#### NPM
+A changelog is available on the GitHub repo:
 
-```
-npm i json-api-store
-```
-
-#### Bower
-
-```
-bower i json-api-store
-```
-
-#### Download
-
-To use directly in the browser you can grab the [store.prod.js](https://raw.githubusercontent.com/haydn/json-api-store/master/dist/store.prod.js) file.
+https://github.com/haydn/json-api-store/releases
