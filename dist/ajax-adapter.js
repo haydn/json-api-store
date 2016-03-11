@@ -151,6 +151,13 @@ var AjaxAdapter = (function () {
           delete options.fields;
         }
 
+        if (options.page && typeof options.page === 'object') {
+          Object.keys(options.page).forEach(function (pageOption) {
+            options["page[" + pageOption + "]"] = options.page[pageOption];
+          });
+          delete options.page;
+        }
+
         params = Object.keys(options).map(function (key) {
           return key + "=" + encodeURIComponent(options[key]);
         }).sort();
