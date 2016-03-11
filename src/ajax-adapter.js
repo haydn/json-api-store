@@ -127,6 +127,13 @@ export default class AjaxAdapter {
         delete options.fields;
       }
 
+      if (options.page && typeof options.page === 'object') {
+        Object.keys(options.page).forEach(pageOption => {
+          options[`page[${pageOption}]`] = options.page[pageOption];
+        });
+        delete options.page;
+      }
+
       params = Object.keys(options).map(key => {
         return key + "=" + encodeURIComponent(options[key]);
       }).sort();

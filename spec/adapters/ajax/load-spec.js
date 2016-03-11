@@ -225,6 +225,35 @@ test("load must use the options if they're provided", function (t) {
   server.restore();
 });
 
+test("load must allow nested page options if they're provided", function (t) {
+  var server = sinon.fakeServer.create({ autoRespond: false });
+  var adapter = new Store.AjaxAdapter();
+  var store = new Store(adapter);
+  t.plan(1);
+  t.timeoutAfter(1000);
+  store.define("products", {});
+  server.respondWith("GET", "/products?page[number]=5&page[size]=1", [
+    200,
+    { "Content-Type": "application/vnd.api+json" },
+    JSON.stringify({
+      data: [],
+      included: []
+    })
+  ]);
+  store.load("products", {
+    page: {
+      number: 5,
+      size: 1
+    }
+  }).subscribe(function (products) {
+    t.pass("returns a successful response");
+  }, function (error) {
+    t.fail(error);
+  });
+  server.respond();
+  server.restore();
+});
+
 test("load must throw an error if the type has not been defined", function (t) {
   var adapter = new Store.AjaxAdapter();
   var store = new Store(adapter);
